@@ -35,6 +35,27 @@ class ItemState(StrEnum):
     OPENED = "opened"
 
 
+class ItemStatus(StrEnum):
+    ACTIVE = "active"
+    USED = "used"
+    DISCARDED = "discarded"
+
+
+class ItemEventType(StrEnum):
+    ADDED = "added"
+    OPENED = "opened"
+    MOVED = "moved"
+    PARTIALLY_USED = "partially_used"
+    USED = "used"
+    DISCARDED = "discarded"
+    DATE_OVERRIDDEN = "date_overridden"
+
+
+class AliasOrigin(StrEnum):
+    CURATED = "curated"  # data/aliases_extra.json
+    LEARNED = "learned"  # the user corrected a match
+
+
 class StorageKey(StrEnum):
     """Which shelf-life figure a duration describes."""
 

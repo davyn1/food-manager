@@ -58,6 +58,17 @@ freezer; tips; raw JSON.
 
 **recipes / recipe_ingredients**: local cache of fetched recipes (Phase 2).
 
+Implementation notes (step 5):
+- Models in `app/db/models.py`; initial Alembic migration in `migrations/versions/`.
+- `items.thawed` (bool) added: selects FoodKeeper's "after thawing" figure.
+- `shelf_life_products` stores `keywords`, `storage` and `tips` as JSON shaped like the
+  Pydantic `ShelfLifeProduct`, instead of 18 duration columns. They're never queried by
+  column, only loaded into the matcher.
+- Enums are stored as strings (no DB enum types), so new categories need no migration.
+- SQLite foreign keys are enforced (`PRAGMA foreign_keys=ON` on every connection).
+- `python -m app.db.seed` is idempotent: it upserts products and defaults, replaces
+  curated aliases (learned aliases win), and only inserts missing staples and settings.
+
 ## 3. Shelf-life data (USDA FoodKeeper)
 
 - `scripts/import_foodkeeper.py` downloads FoodKeeper once, converts durations to days

@@ -12,6 +12,26 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
 ```
 
+## Create and seed the database
+
+Creates `data/food_manager.db` (set `FOOD_MANAGER_DATABASE_URL` to use another
+location), then loads shelf-life data, staples and default settings. Both are safe to
+re-run.
+
+```powershell
+.\.venv\Scripts\alembic.exe upgrade head
+```
+
+```powershell
+.\.venv\Scripts\python.exe -m app.db.seed
+```
+
+After changing models in `app/db/models.py`, generate a migration with:
+
+```powershell
+.\.venv\Scripts\alembic.exe revision --autogenerate -m "describe the change"
+```
+
 ## Run tests
 
 ```powershell
