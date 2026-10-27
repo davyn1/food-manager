@@ -18,6 +18,15 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pytest
 ```
 
+## Regenerate shelf-life data
+
+`data/shelf_life.json` is committed. To rebuild it, save the USDA FoodKeeper JSON as
+`data/raw/foodkeeper.json` (see [docs/DESIGN.md](docs/DESIGN.md)), then:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\import_foodkeeper.py
+```
+
 ## Run the dev server
 
 ```powershell

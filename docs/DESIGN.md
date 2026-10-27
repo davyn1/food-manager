@@ -66,6 +66,20 @@ freezer; tips; raw JSON.
 - `data/aliases_extra.json`: hand-curated common names FoodKeeper lacks.
 - `category_defaults` derived from per-category medians.
 
+Import notes (step 3):
+- fsis.usda.gov blocks scripted downloads (Akamai 403), so the file was taken from the
+  Wayback Machine snapshot of the official URL (2025-07-02). Data version 128,
+  modified 2018-09-06. URL and SHA-256 are recorded in `data/shelf_life.json`.
+- Conversion logic is in `app/core/foodkeeper.py` (pure, tested); the script only does I/O.
+- "DOP_" (from date of purchase) values are preferred; plain values are the fallback.
+- Non-numeric values become notes: `indefinite`, `package_date`, `when_ripe`,
+  `not_recommended`. Hours round down to 0 days.
+- Categories added beyond the original list: `shelf_stable`, `deli`, `plant_protein`.
+  FoodKeeper's "Baking and Cooking" (flour, oils, spices) maps to `shelf_stable`.
+- Perishable categories (dairy, meat, poultry, seafood, deli, frozen) get 0 pantry days
+  by default, since their only pantry data comes from canned/dried variants.
+- Leftovers use USDA guidance: fridge 3 days, freezer 90 days, pantry 0.
+
 Matching: lowercase, strip punctuation, singularize, drop descriptor words
 (boneless, skinless, fresh, organic, ...), then exact alias -> token-set match ->
 rapidfuzz fuzzy match (threshold) -> category fallback. User corrections are saved as
