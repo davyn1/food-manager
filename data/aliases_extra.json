@@ -1,0 +1,25 @@
+{
+ "_comment": "Hand-curated name -> FoodKeeper product id for common names the token matcher gets wrong or misses. Keys are normalized at load time.",
+ "aliases": {
+  "milk": 27,
+  "chicken breast": 117,
+  "salmon": 146,
+  "tuna": 146,
+  "shrimp": 151,
+  "rice": 338,
+  "pasta": 335,
+  "spaghetti": 335,
+  "lemon": 256,
+  "lime": 256,
+  "orange": 256,
+  "onion": 294,
+  "scallion": 295,
+  "bell pepper": 296,
+  "orange juice": 455,
+  "ham": 85,
+  "sugar": 240,
+  "frozen vegetable": 331,
+  "frozen pea": 331,
+  "frozen corn": 331
+ }
+}

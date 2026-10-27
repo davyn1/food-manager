@@ -1,5 +1,6 @@
 """Pydantic models shared across the app. Pure data, no I/O."""
 
+from datetime import date
 from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict
@@ -82,3 +83,47 @@ class CategoryDefault(BaseModel):
     location: Location
     state: ItemState
     days: int
+
+
+class ExpirationSource(StrEnum):
+    ESTIMATED = "estimated"
+    USER = "user"
+
+
+class EstimateBasis(StrEnum):
+    PRODUCT = "product"  # a FoodKeeper figure for this exact product
+    CATEGORY_DEFAULT = "category_default"
+
+
+class EstimateFlag(StrEnum):
+    """Things the UI should tell the user about an estimate."""
+
+    USE_PACKAGE_DATE = "use_package_date"  # source says: go by the printed date
+    WHEN_RIPE = "when_ripe"  # keep at room temperature until ripe
+    NOT_RECOMMENDED = "not_recommended"  # source advises against this storage location
+    INDEFINITE = "indefinite"  # safe indefinitely; date is a best-quality cap
+
+
+class ExpirationEstimate(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    expires_on: date
+    basis: EstimateBasis
+    flags: frozenset[EstimateFlag] = frozenset()
+
+
+class ResolvedExpiration(BaseModel):
+    """The date the app shows, after applying a user-entered date if any."""
+
+    model_config = ConfigDict(frozen=True)
+
+    expires_on: date
+    source: ExpirationSource
+    # The item is opened and the opened-estimate is sooner than the user's printed date.
+    opened_sooner_than_user_date: bool = False
+
+
+class ExpiryStatus(StrEnum):
+    EXPIRED = "expired"
+    EXPIRING_SOON = "expiring_soon"
+    OK = "ok"

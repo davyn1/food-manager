@@ -80,6 +80,20 @@ Import notes (step 3):
   by default, since their only pantry data comes from canned/dried variants.
 - Leftovers use USDA guidance: fridge 3 days, freezer 90 days, pantry 0.
 
+Matching and estimation notes (step 4):
+- `app/core/shelf_life.py`: the last word of a name (head noun) weighs double, so
+  "apple pie" is a pie. A product must cover at least half the weighted tokens. Ties go to
+  the category hint, then the product whose name best matches, then the most generic one.
+  Typos are corrected against the dataset vocabulary (rapidfuzz ratio >= 85, words of 4+
+  letters). If nothing covers every word, an alias for the head noun wins
+  ("skim milk" -> milk).
+- `data/aliases_extra.json`: about 20 curated aliases for ambiguous common names
+  (milk, rice, ham, lemons, onions...).
+- `app/core/expiration.py`: the storage clock restarts only on freezer moves. Opening
+  doesn't shorten an item whose product has no separate opened figure (e.g. butter).
+  "Indefinitely" becomes 10 years so it still sorts. Notes become UI flags
+  (`use_package_date`, `when_ripe`, `not_recommended`, `indefinite`).
+
 Matching: lowercase, strip punctuation, singularize, drop descriptor words
 (boneless, skinless, fresh, organic, ...), then exact alias -> token-set match ->
 rapidfuzz fuzzy match (threshold) -> category fallback. User corrections are saved as
