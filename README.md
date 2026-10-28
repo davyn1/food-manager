@@ -77,6 +77,50 @@ Installing needs the app served over HTTPS. Once it is:
 The app has no login yet, so only serve it somewhere private (or add a login before
 putting it on a public URL). See [docs/DESIGN.md](docs/DESIGN.md) for iOS limitations.
 
+### Private HTTPS with Tailscale
+
+Tailscale gives this PC an HTTPS address that only your own signed-in devices can reach.
+The phone can use the app whenever the PC is on and the app is running.
+
+1. Install Tailscale on the PC from https://tailscale.com/download/windows and sign in.
+2. Install the Tailscale app on the phone (App Store / Play Store) and sign in with the
+   same account. Leave it connected.
+3. In the admin console's DNS page (https://login.tailscale.com/admin/dns), make sure
+   **MagicDNS** is on and enable **HTTPS Certificates**. (If you skip this,
+   `tailscale serve` will send you to a page to enable it.)
+4. Start the app on the PC. It only needs to listen on the PC itself:
+
+   ```powershell
+   .\.venv\Scripts\python.exe -m uvicorn app.main:create_app --factory --port 8000
+   ```
+
+5. In a second terminal (open a new one after installing so `tailscale` is on PATH),
+   share it to your devices over HTTPS. `--bg` keeps sharing on until you turn it off:
+
+   ```powershell
+   tailscale serve --bg 8000
+   ```
+
+6. See the address, which looks like `https://<pc-name>.<tailnet-name>.ts.net`:
+
+   ```powershell
+   tailscale serve status
+   ```
+
+7. On the phone, open that address and install (iPhone: Safari, Share, Add to Home
+   Screen; Android: Chrome, Install). The first load can take a few seconds while the
+   certificate is issued.
+
+To stop sharing:
+
+```powershell
+tailscale serve reset
+```
+
+Notes: the HTTPS certificate is public record (certificate transparency logs), so the PC
+and tailnet names are visible, though nobody outside your tailnet can connect. If the
+PC sleeps or the app stops, the phone shows the offline page until it's back.
+
 ## Regenerate icons
 
 ```powershell
