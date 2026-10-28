@@ -119,6 +119,20 @@ Estimation:
 - **Decision:** opening an item with a user date keeps the user date; show a warning if
   the opened estimate is sooner.
 
+Pantry service notes (step 6):
+- `app/services/pantry.py`: `PantryService` adds items (with a no-save `preview` for the
+  add form), moves, opens, sets or clears the user date, corrects the matched product,
+  records partial use, marks used or discarded, and lists all / expiring soon / expired.
+- Every change goes through one recalculation, so the "user date always wins" rule lives
+  in one place. Methods flush; the caller (API layer) commits.
+- When no location is given, it's suggested: frozen -> freezer; leftovers and unknown
+  food -> fridge; else pantry if the product can be kept there, otherwise the fridge.
+- Choosing a product other than the automatic match saves a learned alias.
+- Using up the whole quantity marks the item used. Finished items can't be changed.
+- `items.estimate_flags` (JSON, migration 2) stores the latest estimate's UI flags.
+- Phase 3 seam: `ItemDraft` (any input source) -> `ItemCreate.from_draft` after the user
+  confirms -> `add_items`. `app/inputs/base.py` defines the `InputSource` protocol.
+
 ## 4. Recipes
 
 **Decision:** TheMealDB first; fetch the whole catalog once (by first letter a–z) into

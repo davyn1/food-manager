@@ -3,7 +3,7 @@
 from datetime import date
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class Category(StrEnum):
@@ -148,3 +148,115 @@ class ExpiryStatus(StrEnum):
     EXPIRED = "expired"
     EXPIRING_SOON = "expiring_soon"
     OK = "ok"
+
+
+# --- items -------------------------------------------------------------------------
+
+
+class ItemDraft(BaseModel):
+    """A proposed item from any input source (manual form, photo, receipt).
+
+    Only the name is required; anything recognized with less certainty is left None.
+    Drafts are never saved directly: the user confirms them as ItemCreate first.
+    """
+
+    name: str
+    category: Category | None = None
+    quantity: float | None = None
+    unit: str | None = None
+    location: Location | None = None
+    state: ItemState | None = None
+    printed_expiration: date | None = None
+    input_source: str = "manual"
+    confidence: float | None = None  # 0..1 from recognizers; None for manual entry
+    raw_text: str | None = None  # what the recognizer saw, for the confirm screen
+
+
+class ItemCreate(BaseModel):
+    """A user-confirmed new item. Unset fields are filled in by the pantry service."""
+
+    name: str = Field(min_length=1, max_length=200)
+    category: Category | None = None  # None: take it from the matched product
+    shelf_life_id: int | None = None  # set when the user picked the product explicitly
+    quantity: float | None = Field(default=None, gt=0)
+    unit: str | None = Field(default=None, max_length=32)
+    location: Location | None = None  # None: suggested from the product/category
+    state: ItemState = ItemState.UNOPENED
+    added_on: date | None = None  # None: today
+    opened_on: date | None = None
+    user_expires_on: date | None = None
+    input_source: str = "manual"
+    notes: str | None = None
+
+    @field_validator("name")
+    @classmethod
+    def _strip_name(cls, value: str) -> str:
+        value = " ".join(value.split())
+        if not value:
+            raise ValueError("name must not be blank")
+        return value
+
+    @classmethod
+    def from_draft(cls, draft: ItemDraft) -> "ItemCreate":
+        return cls(
+            name=draft.name,
+            category=draft.category,
+            quantity=draft.quantity,
+            unit=draft.unit,
+            location=draft.location,
+            state=draft.state or ItemState.UNOPENED,
+            user_expires_on=draft.printed_expiration,
+            input_source=draft.input_source,
+        )
+
+
+class Item(BaseModel):
+    """An item as stored, plus a few derived fields for display."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    category: Category
+    shelf_life_id: int | None
+    shelf_life_name: str | None = None  # e.g. "Chicken parts (legs or thighs)"
+    quantity: float | None
+    unit: str | None
+    location: Location
+    state: ItemState
+    thawed: bool
+    added_on: date
+    opened_on: date | None
+    location_since: date
+    estimated_expires_on: date
+    user_expires_on: date | None
+    expires_on: date
+    expiration_source: ExpirationSource
+    estimate_flags: frozenset[EstimateFlag] = frozenset()
+    status: ItemStatus
+    finished_on: date | None
+    input_source: str
+    notes: str | None
+
+    @property
+    def opened_sooner_than_user_date(self) -> bool:
+        return (
+            self.state is ItemState.OPENED
+            and self.user_expires_on is not None
+            and self.estimated_expires_on < self.user_expires_on
+        )
+
+
+class ItemPreview(BaseModel):
+    """What adding an item would produce, for the add form's live preview."""
+
+    model_config = ConfigDict(frozen=True)
+
+    shelf_life_id: int | None
+    shelf_life_name: str | None
+    match_method: str
+    match_score: float
+    category: Category
+    location: Location
+    estimated_expires_on: date
+    estimate_flags: frozenset[EstimateFlag] = frozenset()

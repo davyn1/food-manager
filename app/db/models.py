@@ -120,6 +120,8 @@ class ItemRow(Base):
     # Effective date (user date if set, else the estimate), stored for sorting.
     expires_on: Mapped[date] = mapped_column(Date)
     expiration_source: Mapped[ExpirationSource] = mapped_column(_enum(ExpirationSource))
+    # EstimateFlag values from the latest estimate, e.g. ["use_package_date"].
+    estimate_flags: Mapped[list[str]] = mapped_column(JSON, default=list, server_default="[]")
     status: Mapped[ItemStatus] = mapped_column(_enum(ItemStatus), default=ItemStatus.ACTIVE)
     finished_on: Mapped[date | None] = mapped_column(Date)
     input_source: Mapped[str] = mapped_column(String(32), default="manual")

@@ -19,7 +19,15 @@ from pydantic import BaseModel, ConfigDict
 from rapidfuzz import fuzz, process
 
 from app.core.normalize import name_tokens, normalize_name
-from app.core.schemas import Category, CategoryDefault, ItemState, Location, ShelfLifeProduct
+from app.core.schemas import (
+    Category,
+    CategoryDefault,
+    DurationNote,
+    ItemState,
+    Location,
+    ShelfLifeProduct,
+    StorageKey,
+)
 
 # The last word of a food name is usually the head noun ("apple pie" is a pie),
 # so it counts more toward a match than the modifiers before it.
@@ -95,6 +103,37 @@ class ShelfLifeIndex:
 
     def default_days(self, category: Category, location: Location, state: ItemState) -> int:
         return self._defaults[(category, location, state)]
+
+    def add_alias(self, alias: str, product_id: int) -> None:
+        """Remember a user correction for future matches (persisting it is the caller's job)."""
+        if product_id not in self._products:
+            raise ValueError(f"Alias {alias!r} points to unknown product id {product_id}")
+        if normalized := normalize_name(alias):
+            self._aliases[normalized] = product_id
+
+    def suggest_location(self, product: ShelfLifeProduct | None, category: Category) -> Location:
+        """Where a new item most likely goes, so quick-add needs no location tap.
+
+        Frozen food goes to the freezer; leftovers and unknown food to the fridge. Otherwise the pantry
+        if the product (or, unmatched, its category) can be kept there, else the fridge.
+        """
+        if category is Category.FROZEN:
+            return Location.FREEZER
+        if category in (Category.LEFTOVERS, Category.OTHER):
+            # Unknown food is safer in the fridge than on a shelf.
+            return Location.FRIDGE
+        if product is not None:
+            pantry = product.storage.get(StorageKey.PANTRY)
+            if pantry is not None and pantry.note is not DurationNote.NOT_RECOMMENDED:
+                return Location.PANTRY
+            if StorageKey.FRIDGE in product.storage or StorageKey.FRIDGE_OPENED in product.storage:
+                return Location.FRIDGE
+            if StorageKey.FREEZER in product.storage:
+                return Location.FREEZER
+            return Location.FRIDGE
+        if self.default_days(category, Location.PANTRY, ItemState.UNOPENED) > 0:
+            return Location.PANTRY
+        return Location.FRIDGE
 
     def match(self, name: str, category: Category | None = None) -> ShelfLifeMatch:
         """Best shelf-life product for `name`. `category` breaks ties when given."""
