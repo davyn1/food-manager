@@ -3,6 +3,15 @@
 {% block heading %}Pantry{% endblock %}
 {% block content %}
 
+<div class="install-banner card" data-install="banner" hidden>
+  <p class="for-prompt">Install Pantry on this phone for one-tap access.</p>
+  <p class="for-ios">Install Pantry: tap <strong>Share</strong>, then <strong>Add to Home Screen</strong>.</p>
+  <div class="install-actions">
+    <button type="button" class="primary for-prompt" data-install-button>Install</button>
+    <button type="button" class="link" data-install-dismiss>Not now</button>
+  </div>
+</div>
+
 <form id="add-form" class="card add-form" method="post" action="/items">
   {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
   <div class="add-row">

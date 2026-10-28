@@ -1,5 +1,6 @@
 """Jinja setup and small display helpers shared by all templates."""
 
+import hashlib
 from datetime import date
 from pathlib import Path
 
@@ -11,6 +12,19 @@ from app.core.schemas import Category, EstimateFlag, ExpiryStatus, Item, ItemSta
 WEB_DIR = Path(__file__).resolve().parent
 TEMPLATES_DIR = WEB_DIR / "templates"
 STATIC_DIR = WEB_DIR / "static"
+# Files the service worker caches; their URLs carry ?v=STATIC_VERSION so a change
+# to any of them reaches phones on the next visit.
+VERSIONED_ASSETS = ("app.css", "app.js", "vendor/htmx.min.js")
+
+
+def _static_version() -> str:
+    digest = hashlib.sha256()
+    for name in VERSIONED_ASSETS:
+        digest.update((STATIC_DIR / name).read_bytes())
+    return digest.hexdigest()[:10]
+
+
+STATIC_VERSION = _static_version()
 
 CATEGORY_LABELS: dict[Category, str] = {c: c.value.replace("_", " ").capitalize() for c in Category}
 LOCATION_LABELS: dict[Location, str] = {loc: loc.value.capitalize() for loc in Location}
@@ -70,6 +84,7 @@ templates.env.globals.update(
     LOCATION_LABELS=LOCATION_LABELS,
     FLAG_TEXT=FLAG_TEXT,
     STATUS_LABELS=STATUS_LABELS,
+    STATIC_VERSION=STATIC_VERSION,
     ItemStatus=ItemStatus,
     UNIT_SUGGESTIONS=UNIT_SUGGESTIONS,
     Category=Category,

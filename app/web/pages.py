@@ -102,7 +102,7 @@ def _item_or_404(request: Request, pantry: PantryService, item_id: int) -> Any:
 
 # --- home and adding ---------------------------------------------------------------
 
-@router.get("/", response_class=HTMLResponse)
+@router.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def home(request: Request, pantry: Pantry, done: str | None = None, item: int | None = None) -> HTMLResponse:
     return _render(
         request, pantry, "home.html",

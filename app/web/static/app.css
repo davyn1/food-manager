@@ -247,6 +247,26 @@ button.choice.current { border-color: var(--accent); box-shadow: inset 0 0 0 1px
 .details dt { color: var(--muted); font-size: 0.9rem; }
 .details dd { margin: 0; overflow-wrap: anywhere; }
 
+/* --- install hints (shown by app.js) ------------------------------------------ */
+
+[data-install] { margin-bottom: 12px; }
+[data-install] p { margin: 0 0 8px; }
+[data-install] h2 { margin-bottom: 6px; }
+[data-install] .for-prompt, [data-install] .for-ios, [data-install] .for-installed { display: none; }
+[data-install][data-mode="prompt"] .for-prompt,
+[data-install][data-mode="ios"] .for-ios,
+[data-install][data-mode="installed"] .for-installed { display: revert; }
+.install-actions { display: flex; gap: 12px; align-items: center; }
+[hidden] { display: none !important; }
+
+a.button {
+  display: flex; align-items: center; justify-content: center;
+  min-height: var(--tap); border-radius: 10px; font-weight: 600; text-decoration: none;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+}
+a.button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.offline p { margin-top: 0; }
+
 /* --- messages ---------------------------------------------------------------- */
 
 .notice, .error {

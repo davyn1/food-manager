@@ -56,8 +56,8 @@ After changing models in `app/db/models.py`, generate a migration with:
 Then open http://127.0.0.1:8000. On startup the app migrates and seeds the database
 automatically, so the two database commands above are only needed for manual setup.
 
-To try it on your phone over your home Wi-Fi (no install as an app yet; that needs
-HTTPS, which comes with step 8):
+To try it on your phone over your home Wi-Fi (works in the browser, but installing to
+the home screen needs HTTPS; see below):
 
 ```powershell
 .\.venv\Scripts\python.exe -m uvicorn app.main:create_app --factory --host 0.0.0.0
@@ -65,3 +65,20 @@ HTTPS, which comes with step 8):
 
 Then open `http://<your PC's local IP>:8000` on the phone. Windows Firewall may ask
 to allow Python on private networks.
+
+## Install on a phone
+
+Installing needs the app served over HTTPS. Once it is:
+
+- **iPhone (Safari):** open the site, tap **Share**, then **Add to Home Screen**.
+- **Android (Chrome):** open the site and tap **Install** in the banner, or use the
+  menu's **Install app** / **Add to Home screen**.
+
+The app has no login yet, so only serve it somewhere private (or add a login before
+putting it on a public URL). See [docs/DESIGN.md](docs/DESIGN.md) for iOS limitations.
+
+## Regenerate icons
+
+```powershell
+.\.venv\Scripts\python.exe scripts\make_icons.py
+```

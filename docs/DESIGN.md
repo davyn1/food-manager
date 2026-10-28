@@ -173,6 +173,39 @@ iOS: manual install via Share -> Add to Home Screen; Web Push only on 16.4+ for 
 PWAs and needs a server-side scheduler. **Decision:** no notifications in Phase 1.
 Camera (Phase 3): prefer `<input type="file" accept="image/*" capture="environment">`.
 
+Implementation notes (step 8):
+- `GET /manifest.webmanifest` (`app/web/pwa.py`): standalone, start_url `/`, theme
+  `#2f6f4e`, icons 192/512 (`any`) and 512 (`maskable`), shortcuts to Expired and All items.
+- Icons are drawn by `scripts/make_icons.py` (pure Python, no image library): a jar on
+  green. The apple-touch-icon (180) and maskable icon fill the square; iOS rounds corners
+  itself and shows transparency as black.
+- `GET /sw.js` is served from the root (scope `/`), `Cache-Control: no-cache`, with the
+  static version injected. Static assets are cache-first under `pantry-<version>`; the
+  version is a hash of app.css, app.js and htmx, and asset URLs carry `?v=<version>`, so a
+  deploy reaches phones on the next visit and old caches are deleted on activate.
+- Pages are never cached (pantry data must be current). With no network, full page loads
+  and hx-boost page swaps get the cached `/offline` page instead of failing silently.
+- Install hints (`app/web/static/app.js`): Android/desktop Chrome shows an Install
+  button (from `beforeinstallprompt`); iOS Safari shows "Share -> Add to Home Screen";
+  nothing shows once installed. The home banner can be dismissed (remembered in
+  localStorage); Settings always has an "Install app" section.
+- `HEAD /` and `HEAD /health` return 200 for hosting health checks.
+
+iOS limitations that affect this app:
+- No install prompt: installing is manual (Share -> Add to Home Screen), so the app shows
+  a hint. On iOS 17+ other browsers can also add to the home screen; older iOS needs Safari.
+- Push notifications for expiring items need iOS 16.4+, an installed (home-screen) app,
+  permission requested from a tap, a VAPID key pair, and a server-side scheduler to send
+  them. There is no background sync / periodic sync on iOS, so the app can't wake itself
+  to check dates. Phase 1 has no notifications (decision 6).
+- iOS keeps separate storage for the home-screen app and for Safari. That doesn't matter
+  here (data is on the server), except that a dismissed install hint in Safari stays
+  dismissed only in Safari.
+- Camera in an installed app (Phase 3): `getUserMedia` has historically been unreliable in
+  standalone mode, so the plan is a file input with `capture="environment"`.
+- HTTPS is required to install and for the service worker on a phone (localhost is
+  exempt only on the computer itself).
+
 ## 7. Phase 1 build order
 
 1. Project skeleton, venv, deps, empty FastAPI app, pytest running

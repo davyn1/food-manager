@@ -3,12 +3,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#2f6f4e">
+  <meta name="theme-color" content="#f6f5f1" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#121614" media="(prefers-color-scheme: dark)">
   {# Swap 422 responses too, so form errors render in place. #}
   <meta name="htmx-config" content='{"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"422","swap":true},{"code":"[45]..","swap":false,"error":true}]}'>
   <title>{% block title %}Pantry{% endblock %} · Food Manager</title>
-  <link rel="stylesheet" href="/static/app.css">
-  <script src="/static/vendor/htmx.min.js" defer></script>
+
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  {# iOS: full-screen when launched from the home screen, and the name under the icon. #}
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Pantry">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+  <link rel="stylesheet" href="/static/app.css?v={{ STATIC_VERSION }}">
+  <script src="/static/vendor/htmx.min.js?v={{ STATIC_VERSION }}" defer></script>
+  <script src="/static/app.js?v={{ STATIC_VERSION }}" defer></script>
 </head>
 <body hx-boost="true">
   <header class="topbar">

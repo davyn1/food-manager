@@ -11,7 +11,7 @@ from app.db.migrate import upgrade_to_head
 from app.db.seed import load_data_files, seed_reference_data
 from app.db.session import make_engine, make_session_factory
 from app.db.shelf_life_repo import load_shelf_life_index
-from app.web import pages
+from app.web import pages, pwa
 from app.web.templating import STATIC_DIR
 
 
@@ -37,10 +37,12 @@ def create_app(
     app.state.index = index
     app.state.today = today
 
-    @app.get("/health")
+    # HEAD too: hosting platforms' health checks often use it.
+    @app.api_route("/health", methods=["GET", "HEAD"])
     def health() -> dict[str, str]:
         return {"status": "ok"}
 
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+    app.include_router(pwa.router)
     app.include_router(pages.router)
     return app
