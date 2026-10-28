@@ -50,7 +50,18 @@ After changing models in `app/db/models.py`, generate a migration with:
 ## Run the dev server
 
 ```powershell
-.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
+.\.venv\Scripts\python.exe -m uvicorn app.main:create_app --factory --reload
 ```
 
-Then open http://127.0.0.1:8000/health
+Then open http://127.0.0.1:8000. On startup the app migrates and seeds the database
+automatically, so the two database commands above are only needed for manual setup.
+
+To try it on your phone over your home Wi-Fi (no install as an app yet; that needs
+HTTPS, which comes with step 8):
+
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn app.main:create_app --factory --host 0.0.0.0
+```
+
+Then open `http://<your PC's local IP>:8000` on the phone. Windows Firewall may ask
+to allow Python on private networks.

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{{ item.name }}{% endblock %}
+{% block heading %}{{ item.name }}{% endblock %}
+{% block content %}
+{% set css = expiry_css(item.expires_on, today, soon_days) %}
+{% set active = item.status == ItemStatus.ACTIVE %}
+
+{% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+
+<section class="card expiry-card {{ css if active else 'finished' }}">
+  {% if active %}
+  <p class="big">{{ expiry_text(item.expires_on, today) }}</p>
+  <p>{{ short_date(item.expires_on) }} ·
+    {% if item.expiration_source.value == "user" %}printed date{% else %}estimated{% endif %}</p>
+  {% else %}
+  <p class="big">{{ STATUS_LABELS[item.status] }}</p>
+  <p>{{ short_date(item.finished_on) }}</p>
+  {% endif %}
+  {% if active and item.opened_sooner_than_user_date %}
+  <p class="warning">Opened: it may only last until {{ short_date(item.estimated_expires_on) }}</p>
+  {% endif %}
+  {% for flag in item.estimate_flags | sort %}<p class="flag">{{ FLAG_TEXT[flag] }}</p>{% endfor %}
+</section>
+
+{% if active %}
+<section class="actions">
+  <div class="button-grid">
+    <form method="post" action="/items/{{ item.id }}/used">
+      <input type="hidden" name="next" value="/">
+      <button class="primary">Used it all</button>
+    </form>
+    <form method="post" action="/items/{{ item.id }}/discard">
+      <input type="hidden" name="next" value="/">
+      <button class="danger">Threw it out</button>
+    </form>
+  </div>
+
+  <form class="inline-form" method="post" action="/items/{{ item.id }}/use">
+    <label>Used some
+      <input name="amount" type="text" inputmode="decimal" placeholder="{{ 'Amount' ~ (' (' ~ item.unit ~ ')' if item.unit else '') }}">
+    </label>
+    <button>Save</button>
+  </form>
+
+  {% if item.state.value == "unopened" %}
+  <form method="post" action="/items/{{ item.id }}/open">
+    <button class="wide">Mark as opened</button>
+  </form>
+  {% endif %}
+
+  <fieldset class="segmented move">
+    <legend>Move to</legend>
+    {% for loc, label in LOCATION_LABELS.items() %}
+    <form method="post" action="/items/{{ item.id }}/move">
+      <input type="hidden" name="location" value="{{ loc.value }}">
+      <button {% if item.location == loc %}disabled aria-current="true"{% endif %}>{{ label }}</button>
+    </form>
+    {% endfor %}
+  </fieldset>
+
+  <form class="inline-form" method="post" action="/items/{{ item.id }}/date">
+    <label>Printed date
+      <input name="user_expires_on" type="date" value="{{ item.user_expires_on.isoformat() if item.user_expires_on else '' }}">
+    </label>
+    <button>Save</button>
+  </form>
+  {% if item.user_expires_on %}
+  <form method="post" action="/items/{{ item.id }}/date">
+    <input type="hidden" name="clear" value="1">
+    <button class="link">Use the estimate instead ({{ short_date(item.estimated_expires_on) }})</button>
+  </form>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="card details">
+  <dl>
+    <dt>Shelf-life match</dt>
+    <dd>{{ item.shelf_life_name or "None (" ~ CATEGORY_LABELS[item.category] ~ " defaults)" }}
+      {% if active %}<a href="/items/{{ item.id }}/match">Change</a>{% endif %}</dd>
+    <dt>Category</dt><dd>{{ CATEGORY_LABELS[item.category] }}</dd>
+    <dt>Where</dt><dd>{{ LOCATION_LABELS[item.location] }}{% if item.thawed %} (thawed){% endif %}</dd>
+    {% if quantity_text(item) %}<dt>Amount</dt><dd>{{ quantity_text(item) }}</dd>{% endif %}
+    <dt>Added</dt><dd>{{ short_date(item.added_on) }}</dd>
+    {% if item.opened_on %}<dt>Opened</dt><dd>{{ short_date(item.opened_on) }}</dd>{% endif %}
+    {% if item.user_expires_on %}<dt>Estimate</dt><dd>{{ short_date(item.estimated_expires_on) }}</dd>{% endif %}
+  </dl>
+</section>
+{% endblock %}

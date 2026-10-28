@@ -16,6 +16,9 @@ htmlcov/
 .env
 data/raw/
 
+# Local Claude Code config (machine-specific paths)
+.claude/
+
 # Editors / OS
 .vscode/
 .idea/

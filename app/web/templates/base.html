@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2f6f4e">
+  {# Swap 422 responses too, so form errors render in place. #}
+  <meta name="htmx-config" content='{"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"422","swap":true},{"code":"[45]..","swap":false,"error":true}]}'>
+  <title>{% block title %}Pantry{% endblock %} · Food Manager</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/vendor/htmx.min.js" defer></script>
+</head>
+<body hx-boost="true">
+  <header class="topbar">
+    <h1>{% block heading %}Pantry{% endblock %}</h1>
+  </header>
+
+  <main class="page">
+    {% if notice %}<p class="notice" role="status">{{ notice }}</p>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <nav class="tabbar" aria-label="Main">
+    <a href="/" class="{{ 'active' if path == '/' }}">Home</a>
+    <a href="/items" class="{{ 'active' if path == '/items' }}">All items</a>
+    <a href="/expired" class="{{ 'active' if path == '/expired' }}">
+      Expired{% if expired_count %} <span class="badge">{{ expired_count }}</span>{% endif %}
+    </a>
+    <a href="/settings" class="{{ 'active' if path == '/settings' }}">Settings</a>
+  </nav>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}All items{% endblock %}
+{% block heading %}All items{% endblock %}
+{% block content %}
+<nav class="chips" aria-label="Filter by location">
+  <a href="/items?sort={{ sort }}" class="chip {{ 'active' if not location }}">All</a>
+  {% for loc, label in LOCATION_LABELS.items() %}
+  <a href="/items?location={{ loc.value }}&sort={{ sort }}" class="chip {{ 'active' if location == loc }}">{{ label }}</a>
+  {% endfor %}
+</nav>
+<nav class="chips" aria-label="Sort">
+  {% set loc_param = "&location=" ~ location.value if location else "" %}
+  <a href="/items?sort=expires{{ loc_param }}" class="chip {{ 'active' if sort != 'name' }}">By date</a>
+  <a href="/items?sort=name{{ loc_param }}" class="chip {{ 'active' if sort == 'name' }}">A–Z</a>
+</nav>
+
+{% if items %}
+<ul class="items">
+  {% for item in items %}{% set quick = "used" %}{% include "partials/item_row.html" %}{% endfor %}
+</ul>
+{% else %}
+<p class="empty">No items here yet. <a href="/">Add one</a></p>
+{% endif %}
+{% endblock %}

@@ -1,15 +1,11 @@
-import shutil
 from collections.abc import Iterator
 from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
-from alembic import command
-from alembic.config import Config
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
-from app.config import ROOT_DIR
 from app.core.schemas import (
     AliasOrigin,
     Category,
@@ -23,10 +19,10 @@ from app.core.schemas import (
     Location,
 )
 from app.db.models import ItemRow, ShelfLifeAliasRow
-from app.db.seed import load_data_files, seed_reference_data
 from app.db.session import make_engine, make_session_factory
 from app.db.shelf_life_repo import load_shelf_life_index
 from app.services.pantry import InvalidOperation, ItemNotFound, PantryService
+from tests.conftest import Clock
 
 D0 = date(2026, 1, 10)
 
@@ -35,40 +31,14 @@ def days_after(n: int) -> date:
     return D0 + timedelta(days=n)
 
 
-@pytest.fixture(scope="session")
-def seeded_db_template(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    """Migrate and seed once; each test gets its own copy of the file."""
-    path = tmp_path_factory.mktemp("template") / "seeded.db"
-    url = f"sqlite:///{path.as_posix()}"
-    config = Config(str(ROOT_DIR / "alembic.ini"))
-    config.set_main_option("script_location", str(ROOT_DIR / "migrations"))
-    config.set_main_option("sqlalchemy.url", url)
-    command.upgrade(config, "head")
-    engine = make_engine(url)
-    with make_session_factory(engine)() as session, session.begin():
-        seed_reference_data(session, *load_data_files())
-    engine.dispose()
-    return path
-
-
-class Clock:
-    def __init__(self, today: date) -> None:
-        self.value = today
-
-    def __call__(self) -> date:
-        return self.value
-
-
 @pytest.fixture
 def clock() -> Clock:
     return Clock(D0)
 
 
 @pytest.fixture
-def session(seeded_db_template: Path, tmp_path: Path) -> Iterator[Session]:
-    path = tmp_path / "test.db"
-    shutil.copy(seeded_db_template, path)
-    engine = make_engine(f"sqlite:///{path.as_posix()}")
+def session(seeded_db_copy: Path) -> Iterator[Session]:
+    engine = make_engine(f"sqlite:///{seeded_db_copy.as_posix()}")
     with make_session_factory(engine)() as s:
         yield s
     engine.dispose()

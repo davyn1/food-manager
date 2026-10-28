@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Change match{% endblock %}
+{% block heading %}What is “{{ item.name }}”?{% endblock %}
+{% block content %}
+<form class="search" method="get" action="/items/{{ item.id }}/match">
+  <label class="visually-hidden" for="match-q">Search shelf-life list</label>
+  <input id="match-q" name="q" type="search" value="{{ q }}" autocomplete="off" enterkeyhint="search">
+  <button>Search</button>
+</form>
+<p class="hint">Pick the closest food. The app will remember it for “{{ item.name }}”.</p>
+
+<ul class="choices">
+  {% for product in candidates %}
+  <li>
+    <form method="post" action="/items/{{ item.id }}/match">
+      <input type="hidden" name="product_id" value="{{ product.id }}">
+      <button class="choice {{ 'current' if product.id == item.shelf_life_id }}">
+        <span class="item-name">{{ product.name }}</span>
+        {% if product.subtitle %}<span class="item-meta">{{ product.subtitle }}</span>{% endif %}
+        <span class="item-meta">{{ CATEGORY_LABELS[product.category] }}</span>
+      </button>
+    </form>
+  </li>
+  {% else %}
+  <li class="empty">No matches. Try a simpler word.</li>
+  {% endfor %}
+  <li>
+    <form method="post" action="/items/{{ item.id }}/match">
+      <input type="hidden" name="product_id" value="">
+      <button class="choice {{ 'current' if not item.shelf_life_id }}">
+        <span class="item-name">None of these</span>
+        <span class="item-meta">Use {{ CATEGORY_LABELS[item.category] | lower }} defaults</span>
+      </button>
+    </form>
+  </li>
+</ul>
+<a class="more-link" href="/items/{{ item.id }}">Back</a>
+{% endblock %}

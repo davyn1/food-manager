@@ -1,0 +1,18 @@
+<div class="preview">
+  {% if preview.shelf_life_name %}
+  <span class="preview-match">{{ preview.shelf_life_name }}</span>
+  {% else %}
+  <span class="preview-match muted">No exact match · {{ CATEGORY_LABELS[preview.category] }} defaults</span>
+  {% endif %}
+  <span class="preview-line">
+    {{ LOCATION_LABELS[preview.location] }} ·
+    {% if data.user_expires_on %}
+      Printed date {{ short_date(data.user_expires_on) }}
+    {% else %}
+      {{ expiry_text(preview.estimated_expires_on, today) }} ({{ short_date(preview.estimated_expires_on) }})
+    {% endif %}
+  </span>
+  {% for flag in preview.estimate_flags | sort %}
+  <span class="preview-flag">{{ FLAG_TEXT[flag] }}</span>
+  {% endfor %}
+</div>

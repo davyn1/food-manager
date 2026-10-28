@@ -103,6 +103,23 @@ def test_alias_to_unknown_product_is_rejected() -> None:
         ShelfLifeIndex(PRODUCTS, DEFAULTS, aliases={"ghost": 999})
 
 
+def test_search_lists_candidates_best_first(index: ShelfLifeIndex) -> None:
+    results = index.search("chicken thigh")
+    assert [p.id for p in results][:3] == [1, 2, 3]
+
+
+def test_search_respects_limit_and_blank(index: ShelfLifeIndex) -> None:
+    assert len(index.search("chicken", limit=2)) == 2
+    assert index.search("  ") == []
+
+
+def test_add_alias_updates_matching(index: ShelfLifeIndex) -> None:
+    index.add_alias("Mystery Meat", 3)
+    match = index.match("mystery meats")
+    assert match.method is MatchMethod.ALIAS
+    assert match.product is not None and match.product.id == 3
+
+
 def test_default_days_lookup(index: ShelfLifeIndex) -> None:
     assert index.default_days(Category.DAIRY, Location.FRIDGE, ItemState.OPENED) == 5
 

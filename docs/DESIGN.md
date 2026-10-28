@@ -133,6 +133,23 @@ Pantry service notes (step 6):
 - Phase 3 seam: `ItemDraft` (any input source) -> `ItemCreate.from_draft` after the user
   confirms -> `add_items`. `app/inputs/base.py` defines the `InputSource` protocol.
 
+UI notes (step 7):
+- `app/web/pages.py`: server-rendered pages; forms post and redirect (303). `hx-boost`
+  turns that into in-place page swaps. The only partial is the add form's live preview
+  (`GET /add/preview`, 300 ms after typing stops).
+- Pages: Home (quick add + expired + expiring soon), All items (filter by location,
+  sort by date or A-Z), Expired (one-tap Toss), item page (used / threw out / used some
+  / open / move / printed date / change match), change-match search, Settings.
+- After adding, the name field is focused again so several items can be entered in a row.
+- Post-action notices use fixed text keyed by `?done=...&item=<id>`; nothing from the URL
+  is echoed. Redirect targets (`next`) must be local paths.
+- Form errors return 422 and re-render in place (htmx is configured to swap 422).
+- The app is built by `create_app()` (`uvicorn --factory`), which migrates and seeds on
+  startup. HTMX 2.0.4 is vendored at `app/web/static/vendor/htmx.min.js`
+  (SRI sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+).
+- Light/dark follows the phone setting. Tap targets are at least 48 px; the bottom tab bar
+  is reachable one-handed. Checked at 375 px wide: no horizontal scrolling.
+
 ## 4. Recipes
 
 **Decision:** TheMealDB first; fetch the whole catalog once (by first letter a–z) into

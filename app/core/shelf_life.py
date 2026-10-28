@@ -149,24 +149,8 @@ class ShelfLifeIndex:
         weights = [1.0] * len(query)
         weights[-1] = HEAD_WEIGHT if len(query) > 1 else 1.0
         total_weight = sum(weights)
-        query_set = set(query)
-
-        best_key: tuple[float, ...] | None = None
-        best: tuple[_Entry, float] | None = None
-        for entry in self._entries:
-            score = sum(w for t, w in zip(query, weights) if t in entry.all_tokens) / total_weight
-            if score < MIN_SCORE:
-                continue
-            name_precision = len(entry.name_tokens & query_set) / len(entry.name_tokens) if entry.name_tokens else 0.0
-            key = (
-                score,
-                1.0 if category is not None and entry.product.category is category else 0.0,
-                name_precision,
-                -len(entry.all_tokens),  # fewer extra qualifiers = more generic = better default
-                -entry.product.id,
-            )
-            if best_key is None or key > best_key:
-                best_key, best = key, (entry, score)
+        ranked = self._ranked(query, weights, category, MIN_SCORE)
+        best = ranked[0] if ranked else None
 
         # A partial match ("skim milk" only matching "lactose-free milk" on "milk") defers
         # to a curated alias for the head noun, which names the generic product.
@@ -182,6 +166,38 @@ class ShelfLifeIndex:
         entry, score = best
         method = MatchMethod.FUZZY if corrected else MatchMethod.TOKENS
         return ShelfLifeMatch(product=entry.product, method=method, score=round(score, 3))
+
+    def search(self, text: str, category: Category | None = None, limit: int = 10) -> list[ShelfLifeProduct]:
+        """Products sharing any word with `text`, best first. For picking a match by hand."""
+        normalized = normalize_name(text)
+        if not normalized:
+            return []
+        query, _ = self._correct_typos(normalized.split())
+        ranked = self._ranked(query, [1.0] * len(query), category, min_score=1e-9)
+        return [entry.product for entry, _ in ranked[:limit]]
+
+    def _ranked(
+        self, query: list[str], weights: list[float], category: Category | None, min_score: float
+    ) -> list[tuple[_Entry, float]]:
+        """Entries covering at least `min_score` of the weighted query, best first."""
+        total_weight = sum(weights)
+        query_set = set(query)
+        scored = []
+        for entry in self._entries:
+            score = sum(w for t, w in zip(query, weights) if t in entry.all_tokens) / total_weight
+            if score < min_score:
+                continue
+            name_precision = len(entry.name_tokens & query_set) / len(entry.name_tokens) if entry.name_tokens else 0.0
+            key = (
+                score,
+                1.0 if category is not None and entry.product.category is category else 0.0,
+                name_precision,
+                -len(entry.all_tokens),  # fewer extra qualifiers = more generic = better default
+                -entry.product.id,
+            )
+            scored.append((key, entry, score))
+        scored.sort(key=lambda item: item[0], reverse=True)
+        return [(entry, score) for _, entry, score in scored]
 
     def _correct_typos(self, tokens: list[str]) -> tuple[list[str], bool]:
         corrected = False

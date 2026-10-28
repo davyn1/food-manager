@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block heading %}Settings{% endblock %}
+{% block content %}
+{% if saved %}<p class="notice" role="status">Saved</p>{% endif %}
+{% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+<form class="card" method="post" action="/settings">
+  <label>“Expiring soon” means within this many days
+    <input name="expiring_soon_days" type="number" inputmode="numeric" min="0" max="60" step="1" value="{{ soon_days }}">
+  </label>
+  <button class="primary wide">Save</button>
+</form>
+{% endblock %}

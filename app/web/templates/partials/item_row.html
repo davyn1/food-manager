@@ -1,0 +1,22 @@
+{# Expects: item, today, soon_days, path. Optional: quick ("used" | "discard"). #}
+{% set css = expiry_css(item.expires_on, today, soon_days) %}
+<li class="item {{ css }}">
+  <a class="item-main" href="/items/{{ item.id }}">
+    <span class="item-name">{{ item.name }}</span>
+    <span class="item-meta">
+      {{ LOCATION_LABELS[item.location] }}{% if quantity_text(item) %} · {{ quantity_text(item) }}{% endif %}{% if item.state.value == 'opened' %} · opened{% endif %}
+    </span>
+    <span class="item-expiry">{{ expiry_text(item.expires_on, today) }}</span>
+  </a>
+  {% if quick == "discard" %}
+  <form method="post" action="/items/{{ item.id }}/discard">
+    <input type="hidden" name="next" value="{{ path }}">
+    <button class="quick danger" aria-label="Throw out {{ item.name }}">Toss</button>
+  </form>
+  {% elif quick == "used" %}
+  <form method="post" action="/items/{{ item.id }}/used">
+    <input type="hidden" name="next" value="{{ path }}">
+    <button class="quick" aria-label="Mark {{ item.name }} as used">Used</button>
+  </form>
+  {% endif %}
+</li>

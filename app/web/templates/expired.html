@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Expired{% endblock %}
+{% block heading %}Expired{% endblock %}
+{% block content %}
+{% if items %}
+<p class="hint">Past their date. Toss them, or open one to set a later printed date.</p>
+<ul class="items">
+  {% for item in items %}{% set quick = "discard" %}{% include "partials/item_row.html" %}{% endfor %}
+</ul>
+{% else %}
+<p class="empty">Nothing has expired.</p>
+{% endif %}
+{% endblock %}
