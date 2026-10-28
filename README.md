@@ -3,7 +3,8 @@
 Pantry tracker that estimates expiration dates and recommends recipes for food that
 needs using up. Mobile-first PWA with a Python (FastAPI) backend.
 
-See [docs/DESIGN.md](docs/DESIGN.md) for the approved architecture and build plan.
+See [docs/DESIGN.md](docs/DESIGN.md) for the approved architecture and build plan, and
+[CLAUDE.md](CLAUDE.md) for current status, working conventions and the next-steps list.
 
 ## Setup (Windows PowerShell)
 
