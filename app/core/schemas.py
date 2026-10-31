@@ -1,6 +1,6 @@
 """Pydantic models shared across the app. Pure data, no I/O."""
 
-from datetime import date
+from datetime import date, datetime
 from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -159,6 +159,20 @@ class User(BaseModel):
     id: int
     username: str
     expiring_soon_days: int
+    is_admin: bool = False
+    session_version: int = 1
+
+
+class Invite(BaseModel):
+    """A sign-up link as shown to the admin (the token itself is never stored)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    id: int
+    created_at: datetime
+    expires_at: datetime
+    used_at: datetime | None = None
+    used_by: str | None = None  # username of whoever signed up with it
 
 
 # --- items -------------------------------------------------------------------------

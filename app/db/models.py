@@ -54,7 +54,25 @@ class UserRow(Base):
     username: Mapped[str] = mapped_column(String(32), unique=True)  # lowercase
     password_hash: Mapped[str] = mapped_column(String(200))
     expiring_soon_days: Mapped[int] = mapped_column(default=3, server_default="3")
+    # Admins can create invite links.
+    is_admin: Mapped[bool] = mapped_column(default=False, server_default="0")
+    # Copied into the login cookie; bumping it (on password change) signs out other devices.
+    session_version: Mapped[int] = mapped_column(default=1, server_default="1")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+
+class InviteRow(Base):
+    """A one-time sign-up link. Only a hash of the token is stored, like a password."""
+
+    __tablename__ = "invites"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    created_by: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    used_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
 
 
 class ShelfLifeProductRow(Base):
