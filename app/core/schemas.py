@@ -49,6 +49,7 @@ class ItemEventType(StrEnum):
     USED = "used"
     DISCARDED = "discarded"
     DATE_OVERRIDDEN = "date_overridden"
+    RESTORED = "restored"  # "used" or "thrown out" was undone
 
 
 class AliasOrigin(StrEnum):

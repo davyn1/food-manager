@@ -3,11 +3,11 @@
 {% block heading %}Expired{% endblock %}
 {% block content %}
 {% if items %}
-<p class="hint">Past their date. Toss them, or open one to set a later printed date.</p>
+<p class="hint">These are past their date. Toss them, or open one if the package says it’s still good.</p>
 <ul class="items">
   {% for item in items %}{% set quick = "discard" %}{% include "partials/item_row.html" %}{% endfor %}
 </ul>
 {% else %}
-<p class="empty">Nothing has expired.</p>
+<p class="empty">Nothing has gone bad. Suspiciously organized of you.</p>
 {% endif %}
 {% endblock %}

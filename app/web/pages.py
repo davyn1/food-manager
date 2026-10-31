@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from pydantic import ValidationError
 
-from app.core.schemas import Category, ItemCreate, ItemState, Location
+from app.core.schemas import Category, ItemCreate, ItemState, ItemStatus, Location
 from app.services.pantry import InvalidOperation, ItemNotFound, PantryService
 from app.web.deps import get_pantry
 from app.web.templating import templates
@@ -20,12 +20,15 @@ Pantry = Annotated[PantryService, Depends(get_pantry)]
 OptStr = Annotated[str | None, Form()]
 
 # ?done=<key>&item=<id> notices. Fixed text only, never echoed from the URL.
+# Voice (PRODUCT.md): playful about forgetting, plain about what happened.
 NOTICES: dict[str, str] = {
-    "added": "Added {name}",
-    "used": "Marked {name} as used",
-    "discarded": "Threw out {name}",
-    "partial": "Recorded using some {name}",
+    "added": "Added {name}. Consider it remembered.",
+    "used": "Marked {name} as used. Nothing wasted.",
+    "discarded": "Threw out {name}. It happens.",
+    "restored": "{name} is back in your pantry.",
 }
+# These notices offer an Undo button, since one tap on Used or Toss removes the item.
+UNDOABLE = {"used", "discarded"}
 
 
 # --- helpers ---------------------------------------------------------------------
@@ -85,13 +88,18 @@ def render(request: Request, pantry: PantryService, template: str, status_code: 
     )
 
 
-def _notice(pantry: PantryService, done: str | None, item_id: int | None) -> str | None:
+def _notice(pantry: PantryService, done: str | None, item_id: int | None) -> dict[str, Any]:
+    """Template context for a post-action notice: its text and, if undoable, the item."""
     if done not in NOTICES or item_id is None:
-        return None
+        return {"notice": None, "undo_item": None}
     try:
-        return NOTICES[done].format(name=pantry.get_item(item_id).name)
+        item = pantry.get_item(item_id)
     except ItemNotFound:
-        return None
+        return {"notice": None, "undo_item": None}
+    return {
+        "notice": NOTICES[done].format(name=item.name),
+        "undo_item": item.id if done in UNDOABLE and item.status is not ItemStatus.ACTIVE else None,
+    }
 
 
 def _item_or_404(request: Request, pantry: PantryService, item_id: int) -> Any:
@@ -109,7 +117,7 @@ def home(request: Request, pantry: Pantry, done: str | None = None, item: int | 
         request, pantry, "home.html",
         expired=pantry.expired(),
         soon=pantry.expiring_soon(),
-        notice=_notice(pantry, done, item),
+        **_notice(pantry, done, item),
         just_added=done == "added",  # keep the keyboard up for the next item
         form={},
     )
@@ -191,13 +199,13 @@ def list_items(
         items.sort(key=lambda i: i.name.lower())
     return render(
         request, pantry, "items.html",
-        items=items, location=location, sort=sort, notice=_notice(pantry, done, item),
+        items=items, location=location, sort=sort, **_notice(pantry, done, item),
     )
 
 
 @router.get("/expired", response_class=HTMLResponse)
 def expired(request: Request, pantry: Pantry, done: str | None = None, item: int | None = None) -> HTMLResponse:
-    return render(request, pantry, "expired.html", items=pantry.expired(), notice=_notice(pantry, done, item))
+    return render(request, pantry, "expired.html", items=pantry.expired(), **_notice(pantry, done, item))
 
 
 # --- one item ----------------------------------------------------------------------
@@ -255,6 +263,12 @@ def used(request: Request, pantry: Pantry, item_id: int, next: OptStr = None) ->
 @router.post("/items/{item_id}/discard")
 def discard(request: Request, pantry: Pantry, item_id: int, next: OptStr = None) -> Response:
     return _act(request, pantry, item_id, lambda: pantry.discard(item_id), next, done="discarded")
+
+
+@router.post("/items/{item_id}/restore")
+def restore(request: Request, pantry: Pantry, item_id: int, next: OptStr = None) -> Response:
+    """Undo for Used / Toss."""
+    return _act(request, pantry, item_id, lambda: pantry.restore(item_id), next, done="restored")
 
 
 @router.post("/items/{item_id}/date")

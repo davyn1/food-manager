@@ -97,15 +97,16 @@
     }
   });
 
-  // Confirmation notices ("Added milk") fade out after a few seconds.
+  // Confirmation notices fade out after data-autohide seconds (longer when they offer Undo).
   function autohideNotices() {
     document.querySelectorAll("[data-autohide]").forEach(function (el) {
       if (el.dataset.autohideStarted) return;
       el.dataset.autohideStarted = "1";
+      var seconds = parseFloat(el.dataset.autohide) || 4;
       setTimeout(function () {
         el.classList.add("is-hiding");
         setTimeout(function () { el.remove(); }, 350);
-      }, 4000);
+      }, seconds * 1000);
     });
   }
 

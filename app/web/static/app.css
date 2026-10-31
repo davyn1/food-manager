@@ -46,7 +46,7 @@
     --tape-soft: #1c2e44;
     --danger: #ff7a85;
     --danger-soft: #3a1d22;
-    --dot-expired: #e2475a;
+    --dot-expired: #d23149;   /* white text stays above 4.5:1 */
     --dot-now: #f5843f;
     --dot-soon: #f2c94c;
     --dot-ok: #5db37d;
@@ -68,6 +68,8 @@ body {
 }
 
 a { color: var(--tape); text-underline-offset: 3px; }
+::selection { background: var(--tape); color: var(--tape-ink); }
+input, textarea { caret-color: var(--tape); }
 p { margin: 0; }
 
 .visually-hidden {
@@ -345,7 +347,12 @@ ul.invites li { display: grid; gap: 2px; }
 /* --- messages ------------------------------------------------------------------ */
 
 .notice, .error { padding: 12px 14px; border-radius: 12px; margin: 0 0 12px; font-weight: 700; }
-.notice { background: var(--tape-soft); transition: opacity 0.3s ease; }
+.notice {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: var(--tape-soft); transition: opacity 0.3s ease;
+}
+.notice form { flex: none; }
+button.undo { min-height: 40px; padding: 0 16px; background: var(--shelf); border-color: transparent; color: var(--tape); }
 .notice.is-hiding { opacity: 0; }
 .error { background: var(--danger-soft); color: var(--danger); }
 .empty, .hint { color: var(--ink-soft); }

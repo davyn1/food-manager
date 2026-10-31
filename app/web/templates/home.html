@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Home{% endblock %}
-{% block heading %}Pantry{% endblock %}
+{% block heading %}{{ user.username | capitalize }}’s pantry{% endblock %}
 {% block content %}
 
 <div class="install-banner card" data-install="banner" hidden>
-  <p class="for-prompt">Install Pantry on this phone for one-tap access.</p>
+  <p class="for-prompt">Install Pantry so it’s one tap away.</p>
   <p class="for-ios">Install Pantry: tap <strong>Share</strong>, then <strong>Add to Home Screen</strong>.</p>
   <div class="install-actions">
     <button type="button" class="primary for-prompt" data-install-button>Install</button>
@@ -16,7 +16,7 @@
   {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
   <div class="add-row">
     <label class="visually-hidden" for="add-name">Item name</label>
-    <input id="add-name" name="name" type="text" value="{{ form.name or '' }}" placeholder="Add an item, e.g. chicken thighs"
+    <input id="add-name" name="name" type="text" value="{{ form.name or '' }}" placeholder="What did you buy?"
            autocomplete="off" autocapitalize="sentences" enterkeyhint="done" maxlength="200" required
            {% if just_added or error %}autofocus{% endif %}>
     <button type="submit" class="primary">Add</button>
@@ -90,7 +90,7 @@
     {% for item in soon %}{% set quick = "used" %}{% include "partials/item_row.html" %}{% endfor %}
   </ul>
   {% else %}
-  <p class="empty">Nothing expires in the next {{ soon_days }} days. Add what you bought today above.</p>
+  <p class="empty">Nothing goes bad in the next {{ soon_days }} days. Just went shopping? Add it above and let the app do the remembering.</p>
   {% endif %}
   <a class="more-link" href="/items">See all items</a>
 </section>

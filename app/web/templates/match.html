@@ -7,7 +7,7 @@
   <input id="match-q" name="q" type="search" value="{{ q }}" autocomplete="off" enterkeyhint="search">
   <button>Search</button>
 </form>
-<p class="hint">Pick the closest food. The app will remember it for “{{ item.name }}”.</p>
+<p class="hint">Pick the closest food. Next time you add “{{ item.name }}”, the app will remember.</p>
 
 <ul class="choices">
   {% for product in candidates %}

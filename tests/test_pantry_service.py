@@ -302,6 +302,31 @@ def test_mark_used_and_discard(pantry: PantryService) -> None:
     assert (discarded.status, discarded.finished_on) == (ItemStatus.DISCARDED, D0)
 
 
+def test_restore_undoes_used_and_discarded(pantry: PantryService, session: Session) -> None:
+    item = pantry.add_item(ItemCreate(name="milk", quantity=1))
+    pantry.mark_used(item.id)
+    restored = pantry.restore(item.id)
+    assert restored.status is ItemStatus.ACTIVE
+    assert restored.finished_on is None
+    assert [i.id for i in pantry.list_items()] == [item.id]
+    pantry.discard(item.id)
+    assert pantry.restore(item.id).status is ItemStatus.ACTIVE
+    assert events(session, item.id)[-1] is ItemEventType.RESTORED
+
+
+def test_restore_of_active_item_is_a_no_op(pantry: PantryService, session: Session) -> None:
+    item = pantry.add_item(ItemCreate(name="milk"))
+    pantry.restore(item.id)
+    assert events(session, item.id) == [ItemEventType.ADDED]
+
+
+def test_restore_is_owner_scoped(pantry: PantryService, other_pantry: PantryService) -> None:
+    theirs = other_pantry.add_item(ItemCreate(name="eggs"))
+    other_pantry.mark_used(theirs.id)
+    with pytest.raises(ItemNotFound):
+        pantry.restore(theirs.id)
+
+
 def test_finished_items_cannot_be_changed(pantry: PantryService) -> None:
     item = pantry.mark_used(pantry.add_item(ItemCreate(name="milk")).id)
     for action in (

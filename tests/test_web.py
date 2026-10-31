@@ -31,7 +31,7 @@ def add(client: TestClient, **fields: str) -> int:
 def test_home_renders_empty_state(client: TestClient) -> None:
     response = client.get("/")
     assert response.status_code == 200
-    assert "Nothing expires in the next 3 days" in response.text
+    assert "Nothing goes bad in the next 3 days" in response.text
     assert 'name="name"' in response.text
     assert "/static/vendor/htmx.min.js" in response.text
 
@@ -105,7 +105,7 @@ def test_expired_list_and_badge(client: TestClient, clock: Clock) -> None:
     assert "Expired 2 days ago" in expired
     assert '<span class="badge" aria-label="1 expired">1</span>' in client.get("/").text
     client.post(f"/items/{item_id}/discard", data={"next": "/expired"})
-    assert "Nothing has expired" in client.get("/expired").text
+    assert "Nothing has gone bad" in client.get("/expired").text
 
 
 # --- item actions ----------------------------------------------------------------
@@ -144,6 +144,36 @@ def test_use_some_then_all(client: TestClient) -> None:
     assert "Used" in client.get(f"/items/{item_id}").text
 
 
+def test_used_and_toss_can_be_undone(client: TestClient) -> None:
+    item_id = add(client, name="milk")
+    response = client.post(f"/items/{item_id}/used", data={"next": "/"}, follow_redirects=True)
+    assert "Marked milk as used" in response.text
+    assert f'action="/items/{item_id}/restore"' in response.text
+    assert 'data-autohide="10"' in response.text
+
+    undo = client.post(f"/items/{item_id}/restore", data={"next": "/"}, follow_redirects=True)
+    assert "milk is back in your pantry" in undo.text
+    assert "/restore" not in undo.text  # nothing left to undo
+    assert "milk" in client.get("/items").text
+
+    client.post(f"/items/{item_id}/discard", data={"next": "/expired"})
+    assert "Threw out milk" in client.get(f"/expired?done=discarded&item={item_id}").text
+    client.post(f"/items/{item_id}/restore")
+    assert "Used it all" in client.get(f"/items/{item_id}").text
+
+
+def test_added_notice_has_no_undo(client: TestClient) -> None:
+    item_id = add(client, name="milk")
+    page = client.get(f"/?done=added&item={item_id}").text
+    assert "Added milk. Consider it remembered." in page
+    assert "/restore" not in page
+    assert 'data-autohide="4"' in page
+
+
+def test_home_greets_by_name(client: TestClient) -> None:
+    assert "Tester’s pantry" in client.get("/").text
+
+
 def test_action_errors_render_on_item_page(client: TestClient) -> None:
     item_id = add(client, name="rice", quantity="5")
     response = client.post(f"/items/{item_id}/use", data={"amount": "-1"})
@@ -180,7 +210,7 @@ def test_next_parameter_cannot_leave_the_site(client: TestClient) -> None:
 
 def test_settings_change_expiring_window(client: TestClient) -> None:
     add(client, name="apples")  # 21 days in the pantry
-    assert "Nothing expires in the next 3 days" in client.get("/").text
+    assert "Nothing goes bad in the next 3 days" in client.get("/").text
     response = client.post("/settings", data={"expiring_soon_days": "30"}, follow_redirects=True)
     assert "Saved" in response.text
     home = client.get("/").text

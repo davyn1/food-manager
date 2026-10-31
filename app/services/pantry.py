@@ -194,6 +194,17 @@ class PantryService:
     def discard(self, item_id: int, on: date | None = None) -> Item:
         return self._finish(item_id, ItemStatus.DISCARDED, ItemEventType.DISCARDED, on)
 
+    def restore(self, item_id: int) -> Item:
+        """Undo "used" or "thrown out": the item is back in the pantry as it was."""
+        row = self._row(item_id)
+        if row.status is ItemStatus.ACTIVE:
+            return self._to_item(row)
+        row.status = ItemStatus.ACTIVE
+        row.finished_on = None
+        row.events.append(ItemEventRow(type=ItemEventType.RESTORED))
+        self.session.flush()
+        return self._to_item(row)
+
     # --- queries -----------------------------------------------------------------
 
     def get_item(self, item_id: int) -> Item:

@@ -3,6 +3,7 @@
 {% block heading %}Pantry{% endblock %}
 {% block content %}
 <form class="card login" method="post" action="/login">
+  <p class="hint">Sign in to see what’s hiding in your fridge.</p>
   {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
   <input type="hidden" name="next" value="{{ next }}">
   <label>Username

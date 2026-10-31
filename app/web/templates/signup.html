@@ -20,7 +20,7 @@
 {% else %}
 <form class="card login" method="post" action="/signup/{{ token }}">
   <h2>Create your account</h2>
-  <p class="hint">You've been invited to Pantry. Your pantry is private to you.</p>
+  <p class="hint">You’re invited to Pantry. Log your food and it tells you what to use up before it goes bad. Your pantry is private to you.</p>
   {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
   <label>Username (3-32 letters, numbers, . _ -)
     <input name="username" type="text" value="{{ username }}" autocomplete="username"

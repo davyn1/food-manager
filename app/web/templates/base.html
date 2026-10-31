@@ -35,7 +35,17 @@
   </header>
 
   <main class="page">
-    {% if notice %}<p class="notice" role="status" data-autohide>{{ notice }}</p>{% endif %}
+    {% if notice %}
+    <div class="notice" role="status" data-autohide="{{ 10 if undo_item else 4 }}">
+      <p>{{ notice }}</p>
+      {% if undo_item %}
+      <form method="post" action="/items/{{ undo_item }}/restore">
+        <input type="hidden" name="next" value="{{ path }}">
+        <button class="undo">Undo</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endif %}
     {% block content %}{% endblock %}
   </main>
 
