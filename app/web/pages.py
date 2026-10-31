@@ -54,7 +54,7 @@ def _parse_float(value: str | None) -> float | None:
         raise InvalidOperation("Please enter a number") from exc
 
 
-def _safe_next(next_url: str | None, default: str) -> str:
+def safe_next(next_url: str | None, default: str) -> str:
     """Only allow redirects to paths on this site."""
     if next_url and next_url.startswith("/") and not next_url.startswith("//") and "\\" not in next_url:
         return next_url
@@ -78,6 +78,7 @@ def _render(request: Request, pantry: PantryService, template: str, status_code:
             "soon_days": pantry.expiring_soon_days(),
             "expired_count": len(pantry.expired()),
             "path": request.url.path,
+            "user": request.state.user,
             **context,
         },
         status_code=status_code,
@@ -224,7 +225,7 @@ def _act(request: Request, pantry: PantryService, item_id: int, action: Any, nex
             return item
         return _render(request, pantry, "item.html", status_code=422, item=item, error=message)
     pantry.session.commit()
-    target = _safe_next(next_url, f"/items/{item_id}")
+    target = safe_next(next_url, f"/items/{item_id}")
     if done:
         return _redirect(target, done=done, item=result.id)
     return _redirect(target)

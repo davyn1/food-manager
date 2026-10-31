@@ -32,6 +32,7 @@
     {% block content %}{% endblock %}
   </main>
 
+  {% if user %}
   <nav class="tabbar" aria-label="Main">
     <a href="/" class="{{ 'active' if path == '/' }}">Home</a>
     <a href="/items" class="{{ 'active' if path == '/items' }}">All items</a>
@@ -40,5 +41,6 @@
     </a>
     <a href="/settings" class="{{ 'active' if path == '/settings' }}">Settings</a>
   </nav>
+  {% endif %}
 </body>
 </html>

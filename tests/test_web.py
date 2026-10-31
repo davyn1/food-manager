@@ -5,8 +5,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import create_app
-from tests.conftest import Clock
+from tests.conftest import Clock, make_app, signed_in_client
 
 D0 = date(2026, 1, 10)
 
@@ -18,8 +17,7 @@ def clock() -> Clock:
 
 @pytest.fixture
 def client(seeded_db_copy: Path, clock: Clock) -> TestClient:
-    app = create_app(f"sqlite:///{seeded_db_copy.as_posix()}", today=clock, auto_setup=False)
-    return TestClient(app, follow_redirects=False)
+    return signed_in_client(make_app(seeded_db_copy, today=clock))
 
 
 def add(client: TestClient, **fields: str) -> int:

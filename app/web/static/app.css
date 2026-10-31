@@ -247,6 +247,11 @@ button.choice.current { border-color: var(--accent); box-shadow: inset 0 0 0 1px
 .details dt { color: var(--muted); font-size: 0.9rem; }
 .details dd { margin: 0; overflow-wrap: anywhere; }
 
+.account { margin-top: 16px; }
+.account h2 { margin-bottom: 4px; }
+.account p { margin: 0; }
+.login { margin-top: 8px; }
+
 /* --- install hints (shown by app.js) ------------------------------------------ */
 
 [data-install] { margin-bottom: 12px; }

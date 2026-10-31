@@ -1,11 +1,17 @@
 import json
 import shutil
+from collections.abc import Callable
 from datetime import date
 from pathlib import Path
 
 import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
+from app.core.schemas import User
 from app.core.shelf_life import ShelfLifeIndex
+from app.main import create_app
+from app.services.users import UserService
 from app.db.migrate import upgrade_to_head
 from app.db.seed import load_data_files, seed_reference_data
 from app.db.session import make_engine, make_session_factory
@@ -56,3 +62,25 @@ def seeded_db_copy(seeded_db_template: Path, tmp_path: Path) -> Path:
     path = tmp_path / "test.db"
     shutil.copy(seeded_db_template, path)
     return path
+
+
+TEST_PASSWORD = "test-password-1"
+
+
+def create_user(app: FastAPI, username: str, password: str = TEST_PASSWORD) -> User:
+    with app.state.session_factory() as session, session.begin():
+        return UserService(session).create_user(username, password)
+
+
+def signed_in_client(app: FastAPI, username: str = "tester") -> TestClient:
+    """A client for `app`, signed in as a newly created user. Doesn't follow redirects."""
+    create_user(app, username)
+    client = TestClient(app, follow_redirects=False)
+    response = client.post("/login", data={"username": username, "password": TEST_PASSWORD})
+    assert response.status_code == 303, response.text
+    return client
+
+
+def make_app(db_path: Path, today: Callable[[], date] = date.today) -> FastAPI:
+    return create_app(f"sqlite:///{db_path.as_posix()}", today=today, auto_setup=False,
+                      secret_key="test-secret", secure_cookies=False)

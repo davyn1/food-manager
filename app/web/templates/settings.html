@@ -11,6 +11,14 @@
   <button class="primary wide">Save</button>
 </form>
 
+<section class="card account">
+  <h2>Account</h2>
+  <p>Signed in as <strong>{{ user.username }}</strong></p>
+  <form method="post" action="/logout">
+    <button class="wide">Sign out</button>
+  </form>
+</section>
+
 <section class="card" data-install="panel" hidden>
   <h2>Install app</h2>
   <p class="for-prompt">Add Pantry to your home screen so it opens like an app.</p>

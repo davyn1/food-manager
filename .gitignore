@@ -15,6 +15,7 @@ htmlcov/
 *.sqlite3
 .env
 data/raw/
+data/.secret_key
 
 # Local Claude Code config (machine-specific paths)
 .claude/
