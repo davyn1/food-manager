@@ -17,8 +17,12 @@ done, plus accounts (login, separate pantry per person) and Fly.io deploy config
 Users: the owner and one friend, each with their own pantry. Hosting: Fly.io (the owner
 already uses Fly for another app). Tailscale was considered and dropped.
 
-Not done yet: the first deploy to Fly and installing on the phones. Exact commands are in
-README.md, "Deploy to Fly.io". flyctl is installed on the dev PC and signed in.
+Deployed 2026-10-30: **https://davy-pantry.fly.dev** (Fly app `davy-pantry`, region
+`lax`, volume `pantry_data` 1 GB with daily snapshots kept 5 days, secret
+`FOOD_MANAGER_SECRET_KEY` set). Ship changes with `fly deploy --depot=false`.
+flyctl is installed on the dev PC and signed in.
+
+Not done yet: creating the two accounts and installing on the phones.
 
 ## How to work on this project
 
@@ -109,6 +113,9 @@ First-time setup on a new machine is in README.md ("Setup").
 - **Web tests** use `TestClient(app, follow_redirects=False)` so redirects can be asserted.
 - **Without `--reload`,** uvicorn won't pick up Python changes; restart it.
 - **`.claude/` is gitignored** (machine-specific paths, e.g. launch.json).
+- **Fly builds:** the default Depot builder fails from this PC (TLS "certificate signed by
+  unknown authority"); always deploy with `--depot=false`. Piping text into
+  `fly secrets import` from PowerShell adds a BOM; use `fly secrets set` instead.
 - **Uvicorn on Windows expands a bare `*`** in arguments into file names, so locally use
   `--forwarded-allow-ips=*`. The Dockerfile's exec form passes `*` through fine on Linux.
 - **Tests lower the scrypt cost** (autouse fixture in conftest) so password hashing is fast.
@@ -118,10 +125,9 @@ First-time setup on a new machine is in README.md ("Setup").
 
 ## Next steps
 
-### Now: deploy and install on the phones
-- [ ] Deploy to Fly.io (README.md, "Deploy to Fly.io"): launch, volume, secret, deploy.
-      Deploying costs money and is public-facing, so confirm with the owner before running
-      these commands.
+### Now: accounts and install on the phones
+- [x] Deploy to Fly.io (README.md, "Deploy to Fly.io"): launch, volume, secret, deploy.
+      Later deploys still need the owner's go-ahead (public-facing).
 - [ ] Create both accounts with `fly ssh console --pty -C "python -m app.manage add-user ..."`.
       The owner types the passwords; never enter or choose passwords for them.
 - [ ] Install from each phone: iPhone via Safari > Share > Add to Home Screen; Android via

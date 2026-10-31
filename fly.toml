@@ -1,37 +1,38 @@
-# Fly.io config. `fly launch --copy-config --name <your-app-name>` fills in `app`.
-# Deploy steps are in README.md ("Deploy to Fly.io").
+# Fly.io config for https://davy-pantry.fly.dev
+# Deploy steps are in README.md ("Deploy to Fly.io"). See
+# https://fly.io/docs/reference/configuration/ for the format.
 
-app = "pantry-change-me"
-primary_region = "lax"
+app = 'davy-pantry'
+primary_region = 'lax'
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = 'Dockerfile'
 
 [env]
-  # The database lives on the persistent volume mounted at /data.
-  FOOD_MANAGER_DATABASE_URL = "sqlite:////data/food_manager.db"
+  # Not secret: just where the database file lives (on the volume mounted at /data).
+  FOOD_MANAGER_DATABASE_URL = 'sqlite:////data/food_manager.db'
   # Login cookie only over HTTPS. FOOD_MANAGER_SECRET_KEY is a Fly secret, not set here.
-  FOOD_MANAGER_SECURE_COOKIES = "1"
+  FOOD_MANAGER_SECURE_COOKIES = '1'
 
 [[mounts]]
-  source = "pantry_data"
-  destination = "/data"
+  source = 'pantry_data'
+  destination = '/data'
 
 [http_service]
   internal_port = 8080
   force_https = true
   # Stop when idle to save money; the next visit starts it again in a second or two.
-  auto_stop_machines = "stop"
+  auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
 
   [[http_service.checks]]
-    grace_period = "20s"
-    interval = "30s"
-    method = "GET"
-    path = "/health"
-    timeout = "5s"
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '20s'
+    method = 'GET'
+    path = '/health'
 
 [[vm]]
-  size = "shared-cpu-1x"
-  memory = "256mb"
+  size = 'shared-cpu-1x'
+  memory = '256mb'

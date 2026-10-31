@@ -81,6 +81,10 @@ pantry.
 
 ## Deploy to Fly.io
 
+**Live at https://davy-pantry.fly.dev** (app `davy-pantry`, region `lax`). Steps 1-4
+below are already done; to ship changes, just run `fly deploy --depot=false`. To create
+accounts, see step 5.
+
 The app runs on one small Fly machine (256 MB, about $2.20/month) with a 1 GB volume
 for the SQLite database (about $0.15/month). It stops when nobody is using it and starts
 again on the next visit (a second or two). Fly builds the image remotely, so Docker isn't
@@ -106,10 +110,12 @@ needed locally. The commands below use region `lax` (Los Angeles); pick another 
    fly secrets set --stage "FOOD_MANAGER_SECRET_KEY=$(.\.venv\Scripts\python.exe -c 'import secrets; print(secrets.token_urlsafe(48))')"
    ```
 
-4. Deploy (one machine, since SQLite lives on one volume):
+4. Deploy (one machine, since SQLite lives on one volume). `--depot=false` uses Fly's
+   own builder: on this PC the default Depot builder failed with "certificate signed
+   by unknown authority".
 
    ```powershell
-   fly deploy --ha=false
+   fly deploy --ha=false --depot=false
    ```
 
 5. Open `https://<app-name>.fly.dev` once to wake the machine, then create the two
@@ -125,7 +131,7 @@ needed locally. The commands below use region `lax` (Los Angeles); pick another 
 
 6. Sign in on each phone and install it (below).
 
-Later updates: commit, then run `fly deploy`. Logs: `fly logs`. Fly keeps automatic
+Later updates: commit, then run `fly deploy --depot=false`. Logs: `fly logs`. Fly keeps automatic
 daily snapshots of the volume; list them with `fly volumes list` and
 `fly volumes snapshots list <volume-id>`.
 
