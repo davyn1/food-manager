@@ -103,7 +103,7 @@ def test_expired_list_and_badge(client: TestClient, clock: Clock) -> None:
     expired = client.get("/expired").text
     assert "chicken thighs" in expired
     assert "Expired 2 days ago" in expired
-    assert '<span class="badge">1</span>' in client.get("/").text
+    assert '<span class="badge" aria-label="1 expired">1</span>' in client.get("/").text
     client.post(f"/items/{item_id}/discard", data={"next": "/expired"})
     assert "Nothing has expired" in client.get("/expired").text
 

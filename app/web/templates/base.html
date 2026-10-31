@@ -1,3 +1,4 @@
+{% from "partials/icons.html" import icon -%}
 <!doctype html>
 <html lang="en">
 <head>
@@ -5,8 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   {# Never send page URLs (e.g. a sign-up link's token) to other sites. #}
   <meta name="referrer" content="same-origin">
-  <meta name="theme-color" content="#f6f5f1" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#121614" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#edf1f2" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#10151b" media="(prefers-color-scheme: dark)">
   {# Swap 422 responses too, so form errors render in place. #}
   <meta name="htmx-config" content='{"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"422","swap":true},{"code":"[45]..","swap":false,"error":true}]}'>
   <title>{% block title %}Pantry{% endblock %} · Food Manager</title>
@@ -20,6 +21,10 @@
   <meta name="apple-mobile-web-app-title" content="Pantry">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
+  {# Atkinson Hyperlegible for everything; Permanent Marker only inside day dots. #}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Permanent+Marker&display=swap">
   <link rel="stylesheet" href="/static/app.css?v={{ STATIC_VERSION }}">
   <script src="/static/vendor/htmx.min.js?v={{ STATIC_VERSION }}" defer></script>
   <script src="/static/app.js?v={{ STATIC_VERSION }}" defer></script>
@@ -30,18 +35,19 @@
   </header>
 
   <main class="page">
-    {% if notice %}<p class="notice" role="status">{{ notice }}</p>{% endif %}
+    {% if notice %}<p class="notice" role="status" data-autohide>{{ notice }}</p>{% endif %}
     {% block content %}{% endblock %}
   </main>
 
   {% if user %}
   <nav class="tabbar" aria-label="Main">
-    <a href="/" class="{{ 'active' if path == '/' }}">Home</a>
-    <a href="/items" class="{{ 'active' if path == '/items' }}">All items</a>
-    <a href="/expired" class="{{ 'active' if path == '/expired' }}">
-      Expired{% if expired_count %} <span class="badge">{{ expired_count }}</span>{% endif %}
+    <a href="/" {% if path == '/' %}aria-current="page"{% endif %}>{{ icon("home") }}<span>Home</span></a>
+    <a href="/items" {% if path == '/items' %}aria-current="page"{% endif %}>{{ icon("items") }}<span>All items</span></a>
+    <a href="/expired" {% if path == '/expired' %}aria-current="page"{% endif %}>
+      {{ icon("expired") }}<span>Expired</span>
+      {% if expired_count %}<span class="badge" aria-label="{{ expired_count }} expired">{{ expired_count }}</span>{% endif %}
     </a>
-    <a href="/settings" class="{{ 'active' if path == '/settings' }}">Settings</a>
+    <a href="/settings" {% if path == '/settings' %}aria-current="page"{% endif %}>{{ icon("settings") }}<span>Settings</span></a>
   </nav>
   {% endif %}
 </body>

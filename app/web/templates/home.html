@@ -69,7 +69,10 @@
 
 {% if expired %}
 <section>
-  <h2><a href="/expired">Expired ({{ expired | length }})</a></h2>
+  <div class="section-head">
+    <h2>Past its date</h2>
+    <a href="/expired">{{ expired | length }} expired</a>
+  </div>
   <ul class="items">
     {% for item in expired[:3] %}{% set quick = "discard" %}{% include "partials/item_row.html" %}{% endfor %}
   </ul>
@@ -78,13 +81,16 @@
 {% endif %}
 
 <section>
-  <h2>Expiring soon <span class="muted">· next {{ soon_days }} days</span></h2>
+  <div class="section-head">
+    <h2>Use soon</h2>
+    <span class="muted">next {{ soon_days }} days</span>
+  </div>
   {% if soon %}
   <ul class="items">
     {% for item in soon %}{% set quick = "used" %}{% include "partials/item_row.html" %}{% endfor %}
   </ul>
   {% else %}
-  <p class="empty">Nothing expires in the next {{ soon_days }} days.</p>
+  <p class="empty">Nothing expires in the next {{ soon_days }} days. Add what you bought today above.</p>
   {% endif %}
   <a class="more-link" href="/items">See all items</a>
 </section>

@@ -1,0 +1,8 @@
+{# A day dot. size: "" (list), "big" (item page), "small" (add preview). Decorative: the
+   same information is always in nearby text for screen readers. #}
+{% macro day_dot(expires_on, today, soon_days, size="") -%}
+{% set number, unit = dot_parts(expires_on, today) %}
+<span class="dot dot-{{ dot_level(expires_on, today, soon_days) }}{{ ' dot-' ~ size if size }}{{ ' dot-word' if not unit }}" aria-hidden="true">
+  <span class="dot-num">{{ number }}</span>{% if unit %}<span class="dot-unit">{{ unit }}</span>{% endif %}
+</span>
+{%- endmacro %}

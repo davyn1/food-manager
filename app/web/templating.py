@@ -67,6 +67,38 @@ def expiry_css(expires_on: date, today: date, soon_days: int) -> str:
     }[expiry_status(expires_on, today, soon_days)]
 
 
+def dot_level(expires_on: date, today: date, soon_days: int) -> str:
+    """Day-dot color: expired, now (today/tomorrow), soon (within the window), ok, later (months)."""
+    remaining = days_left(expires_on, today)
+    if remaining < 0:
+        return "expired"
+    if remaining <= 1:
+        return "now"
+    if remaining <= soon_days:
+        return "soon"
+    if remaining < 60:
+        return "ok"
+    return "later"
+
+
+def dot_parts(expires_on: date, today: date) -> tuple[str, str]:
+    """What's written on a day dot: a marker number and a small unit under it.
+
+    ("today", ""), ("1", "day"), ("3", "days"), ("−2", "days") for past dates,
+    ("4", "mo"), ("2", "yr"). The marker font is capitals-only, so units stay in the body font.
+    """
+    remaining = days_left(expires_on, today)
+    if remaining == 0:
+        return "today", ""
+    if remaining < 0:
+        return f"−{-remaining}", "day" if remaining == -1 else "days"
+    if remaining < 60:
+        return str(remaining), "day" if remaining == 1 else "days"
+    if remaining < 730:
+        return str(round(remaining / 30)), "mo"
+    return str(round(remaining / 365)), "yr"
+
+
 def short_date(value: date) -> str:
     return f"{value:%a} {value:%b} {value.day}"
 
@@ -91,6 +123,8 @@ templates.env.globals.update(
     Location=Location,
     expiry_text=expiry_text,
     expiry_css=expiry_css,
+    dot_level=dot_level,
+    dot_parts=dot_parts,
     short_date=short_date,
     quantity_text=quantity_text,
 )

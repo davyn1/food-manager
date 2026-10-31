@@ -97,7 +97,21 @@
     }
   });
 
+  // Confirmation notices ("Added milk") fade out after a few seconds.
+  function autohideNotices() {
+    document.querySelectorAll("[data-autohide]").forEach(function (el) {
+      if (el.dataset.autohideStarted) return;
+      el.dataset.autohideStarted = "1";
+      setTimeout(function () {
+        el.classList.add("is-hiding");
+        setTimeout(function () { el.remove(); }, 350);
+      }, 4000);
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", refresh);
+  document.addEventListener("DOMContentLoaded", autohideNotices);
   // hx-boost swaps the body on navigation; re-apply to the new content.
   document.addEventListener("htmx:afterSettle", refresh);
+  document.addEventListener("htmx:afterSettle", autohideNotices);
 })();

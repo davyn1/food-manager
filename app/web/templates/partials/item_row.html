@@ -1,12 +1,18 @@
 {# Expects: item, today, soon_days, path. Optional: quick ("used" | "discard"). #}
-{% set css = expiry_css(item.expires_on, today, soon_days) %}
-<li class="item {{ css }}">
+{% from "partials/icons.html" import icon %}
+{% from "partials/dot.html" import day_dot %}
+<li class="item">
   <a class="item-main" href="/items/{{ item.id }}">
-    <span class="item-name">{{ item.name }}</span>
-    <span class="item-meta">
-      {{ LOCATION_LABELS[item.location] }}{% if quantity_text(item) %} · {{ quantity_text(item) }}{% endif %}{% if item.state.value == 'opened' %} · opened{% endif %}
+    {{ day_dot(item.expires_on, today, soon_days) }}
+    <span class="item-body">
+      <span class="item-name">{{ item.name }}</span>
+      <span class="item-meta">
+        <span class="where">{{ icon(item.location.value, 16) }}{{ LOCATION_LABELS[item.location] }}</span>
+        {% if quantity_text(item) %}<span>{{ quantity_text(item) }}</span>{% endif %}
+        {% if item.state.value == 'opened' %}<span>opened</span>{% endif %}
+      </span>
+      <span class="visually-hidden">{{ expiry_text(item.expires_on, today) }}</span>
     </span>
-    <span class="item-expiry">{{ expiry_text(item.expires_on, today) }}</span>
   </a>
   {% if quick == "discard" %}
   <form method="post" action="/items/{{ item.id }}/discard">

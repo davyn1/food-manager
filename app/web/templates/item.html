@@ -1,26 +1,33 @@
 {% extends "base.html" %}
+{% from "partials/icons.html" import icon %}
+{% from "partials/dot.html" import day_dot %}
 {% block title %}{{ item.name }}{% endblock %}
 {% block heading %}{{ item.name }}{% endblock %}
 {% block content %}
-{% set css = expiry_css(item.expires_on, today, soon_days) %}
 {% set active = item.status == ItemStatus.ACTIVE %}
 
 {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
 
-<section class="card expiry-card {{ css if active else 'finished' }}">
+<section class="label-card">
   {% if active %}
-  <p class="big">{{ expiry_text(item.expires_on, today) }}</p>
-  <p>{{ short_date(item.expires_on) }} ·
-    {% if item.expiration_source.value == "user" %}printed date{% else %}estimated{% endif %}</p>
+  {{ day_dot(item.expires_on, today, soon_days, "big") }}
+  <div class="label-text">
+    <p class="big">{{ expiry_text(item.expires_on, today) }}</p>
+    <p>Use by {{ short_date(item.expires_on) }},
+      {% if item.expiration_source.value == "user" %}printed date{% else %}estimated{% endif %}</p>
+  </div>
   {% else %}
-  <p class="big">{{ STATUS_LABELS[item.status] }}</p>
-  <p>{{ short_date(item.finished_on) }}</p>
+  <span class="dot dot-big dot-done dot-word" aria-hidden="true"><span class="dot-num">{{ "used" if item.status == ItemStatus.USED else "out" }}</span></span>
+  <div class="label-text">
+    <p class="big">{{ STATUS_LABELS[item.status] }}</p>
+    <p>{{ short_date(item.finished_on) }}</p>
+  </div>
   {% endif %}
-  {% if active and item.opened_sooner_than_user_date %}
-  <p class="warning">Opened: it may only last until {{ short_date(item.estimated_expires_on) }}</p>
-  {% endif %}
-  {% for flag in item.estimate_flags | sort %}<p class="flag">{{ FLAG_TEXT[flag] }}</p>{% endfor %}
 </section>
+{% if active and item.opened_sooner_than_user_date %}
+<p class="warning">Opened, so it may only last until {{ short_date(item.estimated_expires_on) }}.</p>
+{% endif %}
+{% for flag in item.estimate_flags | sort %}<p class="flag">{{ FLAG_TEXT[flag] }}</p>{% endfor %}
 
 {% if active %}
 <section class="actions">
@@ -35,13 +42,6 @@
     </form>
   </div>
 
-  <form class="inline-form" method="post" action="/items/{{ item.id }}/use">
-    <label>Used some
-      <input name="amount" type="text" inputmode="decimal" placeholder="{{ 'Amount' ~ (' (' ~ item.unit ~ ')' if item.unit else '') }}">
-    </label>
-    <button>Save</button>
-  </form>
-
   {% if item.state.value == "unopened" %}
   <form method="post" action="/items/{{ item.id }}/open">
     <button class="wide">Mark as opened</button>
@@ -49,31 +49,44 @@
   {% endif %}
 
   <fieldset class="segmented move">
-    <legend>Move to</legend>
+    <legend>Keep it in</legend>
     {% for loc, label in LOCATION_LABELS.items() %}
     <form method="post" action="/items/{{ item.id }}/move">
       <input type="hidden" name="location" value="{{ loc.value }}">
-      <button {% if item.location == loc %}disabled aria-current="true"{% endif %}>{{ label }}</button>
+      <button {% if item.location == loc %}disabled aria-current="true"{% endif %}>{{ icon(loc.value, 18) }}{{ label }}</button>
     </form>
     {% endfor %}
   </fieldset>
 
-  <form class="inline-form" method="post" action="/items/{{ item.id }}/date">
-    <label>Printed date
-      <input name="user_expires_on" type="date" value="{{ item.user_expires_on.isoformat() if item.user_expires_on else '' }}">
-    </label>
-    <button>Save</button>
-  </form>
-  {% if item.user_expires_on %}
-  <form method="post" action="/items/{{ item.id }}/date">
-    <input type="hidden" name="clear" value="1">
-    <button class="link">Use the estimate instead ({{ short_date(item.estimated_expires_on) }})</button>
-  </form>
-  {% endif %}
+  <details class="fold">
+    <summary>Used some</summary>
+    <form class="inline-form" method="post" action="/items/{{ item.id }}/use">
+      <label>Amount used{{ ' (' ~ item.unit ~ ')' if item.unit }}
+        <input name="amount" type="text" inputmode="decimal" placeholder="{{ quantity_text(item) or '1' }}">
+      </label>
+      <button>Save</button>
+    </form>
+  </details>
+
+  <details class="fold" {% if item.user_expires_on %}open{% endif %}>
+    <summary>Printed date</summary>
+    <form class="inline-form" method="post" action="/items/{{ item.id }}/date">
+      <label>Date on the package
+        <input name="user_expires_on" type="date" value="{{ item.user_expires_on.isoformat() if item.user_expires_on else '' }}">
+      </label>
+      <button>Save</button>
+    </form>
+    {% if item.user_expires_on %}
+    <form method="post" action="/items/{{ item.id }}/date">
+      <input type="hidden" name="clear" value="1">
+      <button class="link">Use the estimate instead ({{ short_date(item.estimated_expires_on) }})</button>
+    </form>
+    {% endif %}
+  </details>
 </section>
 {% endif %}
 
-<section class="card details">
+<section class="details">
   <dl>
     <dt>Shelf-life match</dt>
     <dd>{{ item.shelf_life_name or "None (" ~ CATEGORY_LABELS[item.category] ~ " defaults)" }}

@@ -1,0 +1,21 @@
+{# Inline line icons (24px grid, drawn with currentColor). Decorative: always next to text. #}
+{% macro icon(name, size=22) -%}
+<svg class="icon" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+{%- if name == "home" -%}
+  <path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M10 20v-5h4v5"/>
+{%- elif name == "items" -%}
+  <path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01" stroke-width="3"/>
+{%- elif name == "expired" -%}
+  <circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><path d="M12 16.5h.01" stroke-width="3"/>
+{%- elif name == "settings" -%}
+  <path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>
+{%- elif name == "pantry" -%}
+  <path d="M8 3h8v3H8z"/><rect x="6" y="6" width="12" height="15" rx="2"/><path d="M6 11h12"/>
+{%- elif name == "fridge" -%}
+  <rect x="6" y="2.5" width="12" height="19" rx="2"/><path d="M6 10h12"/><path d="M9 5.5v2M9 13v3"/>
+{%- elif name == "freezer" -%}
+  <path d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9"/><path d="M9.5 4.5 12 6l2.5-1.5M9.5 19.5 12 18l2.5 1.5"/>
+{%- endif -%}
+</svg>
+{%- endmacro %}

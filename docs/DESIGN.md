@@ -178,6 +178,26 @@ Invites and passwords (decided 2026-10-31, planning for 4-5 friends):
 - Referrer policy `same-origin` so sign-up tokens never leave the site in headers.
 - Limits to revisit as the group grows: docs/SCALING.md.
 
+Visual design: "day dots" (2026-10-31):
+- Concept: kitchens label food with colored dot stickers and a marker. Each item gets a
+  round dot (`partials/dot.html`): color is urgency, the marker number is time left.
+  The dot is the only loud element; the rest stays quiet.
+- Dot levels (`dot_level`): expired (red), now = today/tomorrow (orange), soon = within
+  the user's window (yellow), ok (green), later = 60+ days (slate). Text (`dot_parts`):
+  a marker number plus a small lowercase unit ("3" / "days", "4" / "mo"), because the
+  marker face is capitals-only and "3D" read like 3-D. Full text stays in the page for
+  screen readers.
+- Colors: fridge-enamel page `#edf1f2`, white shelves, marker-navy ink `#1c2430`,
+  painter's-tape blue `#2f6db5` for actions and the active tab. Dark mode is the same
+  roles at night (`#10151b` page, `#6fa5ea` tape).
+- Type: Atkinson Hyperlegible (Braille Institute's legibility face, fitting an app for a
+  forgetful user) for everything; Permanent Marker only inside dots. Both load from
+  Google Fonts (system-font fallback offline). Self-hosting them would remove the Google
+  request; see docs/SCALING.md.
+- Lists are one white shelf with thin dividers (not a card per item). Location is an
+  icon plus word; the tab bar has icons. Confirmation notices fade after 4 seconds.
+  No middle-dot separators or all-caps labels.
+
 ## 4. Recipes
 
 **Decision:** TheMealDB first; fetch the whole catalog once (by first letter a–z) into
