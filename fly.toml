@@ -1,8 +1,8 @@
-# Fly.io config for https://davy-pantry.fly.dev
+# Fly.io config for https://elaineisforgetful-pantry.fly.dev
 # Deploy steps are in README.md ("Deploy to Fly.io"). See
 # https://fly.io/docs/reference/configuration/ for the format.
 
-app = 'davy-pantry'
+app = 'elaineisforgetful-pantry'
 primary_region = 'lax'
 
 [build]

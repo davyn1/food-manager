@@ -88,7 +88,9 @@ How this might need to change with more people: [docs/SCALING.md](docs/SCALING.m
 
 ## Deploy to Fly.io
 
-**Live at https://davy-pantry.fly.dev** (app `davy-pantry`, region `lax`). Steps 1-4
+**Live at https://elaineisforgetful-pantry.fly.dev** (app `elaineisforgetful-pantry`,
+region `lax`). Fly apps can't be renamed; a new name means a new app (steps 1-4 again).
+Steps 1-4
 below are already done; to ship changes, just run `fly deploy --depot=false`. To create
 your account and invite friends, see steps 5-6.
 

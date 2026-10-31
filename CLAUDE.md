@@ -21,13 +21,15 @@ Users: the owner plus a few friends (planning for 4-5), each with their own pant
 owner is the admin and invites friends from Settings > Invite friends. Hosting: Fly.io
 (the owner already uses Fly for another app). Tailscale was considered and dropped.
 
-Deployed 2026-10-30: **https://davy-pantry.fly.dev** (Fly app `davy-pantry`, region
-`lax`, volume `pantry_data` 1 GB with daily snapshots kept 5 days, secret
-`FOOD_MANAGER_SECRET_KEY` set). Ship changes with `fly deploy --depot=false`.
-flyctl is installed on the dev PC and signed in.
+Live at **https://elaineisforgetful-pantry.fly.dev** (Fly app `elaineisforgetful-pantry`,
+region `lax`, volume `pantry_data` 1 GB with daily snapshots kept 5 days, secret
+`FOOD_MANAGER_SECRET_KEY` set), deployed 2026-10-31 with everything up to invites and
+password changes. The first app, `davy-pantry`, was destroyed (Fly apps can't be
+renamed). Ship changes with `fly deploy --depot=false`. flyctl is installed on the dev PC
+and signed in.
 
-Not done yet: deploying the invites/password work (the live site predates it), creating
-the owner's admin account, inviting friends, and installing on the phones.
+Not done yet: creating the owner's admin account, inviting friends, and installing on
+the phones.
 
 ## How to work on this project
 
@@ -136,8 +138,8 @@ First-time setup on a new machine is in README.md ("Setup").
 
 ### Now: accounts and install on the phones
 - [x] Deploy to Fly.io (README.md, "Deploy to Fly.io"): launch, volume, secret, deploy.
-- [ ] Deploy the invites/password work: `fly deploy --depot=false`. Every deploy needs the
-      owner's go-ahead (public-facing).
+- [x] Deploy the invites/password work (2026-10-31, to `elaineisforgetful-pantry`).
+      Every deploy needs the owner's go-ahead (public-facing).
 - [ ] Owner creates their admin account:
       `fly ssh console --pty -C "python -m app.manage add-user davy --admin"`.
       The owner types the password; never enter or choose passwords for them.
