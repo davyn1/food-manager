@@ -150,6 +150,17 @@ class ExpiryStatus(StrEnum):
     OK = "ok"
 
 
+# --- users -------------------------------------------------------------------------
+
+
+class User(BaseModel):
+    model_config = ConfigDict(from_attributes=True, frozen=True)
+
+    id: int
+    username: str
+    expiring_soon_days: int
+
+
 # --- items -------------------------------------------------------------------------
 
 

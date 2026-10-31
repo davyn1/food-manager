@@ -47,6 +47,16 @@ class Base(DeclarativeBase):
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
 
 
+class UserRow(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(32), unique=True)  # lowercase
+    password_hash: Mapped[str] = mapped_column(String(200))
+    expiring_soon_days: Mapped[int] = mapped_column(default=3, server_default="3")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+
 class ShelfLifeProductRow(Base):
     """One FoodKeeper product. Durations and tips are JSON shaped like ShelfLifeProduct."""
 

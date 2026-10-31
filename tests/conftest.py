@@ -23,6 +23,12 @@ class Clock:
         return self.value
 
 
+@pytest.fixture(autouse=True)
+def fast_password_hashing(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Real scrypt cost is deliberately slow; tests don't need it."""
+    monkeypatch.setattr("app.core.passwords.SCRYPT_N", 2**10)
+
+
 @pytest.fixture(scope="session")
 def real_index() -> ShelfLifeIndex:
     """Index over the committed FoodKeeper data and curated aliases."""
