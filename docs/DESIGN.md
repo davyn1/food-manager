@@ -150,6 +150,24 @@ UI notes (step 7):
 - Light/dark follows the phone setting. Tap targets are at least 48 px; the bottom tab bar
   is reachable one-handed. Checked at 375 px wide: no horizontal scrolling.
 
+Accounts and hosting (decided 2026-10-30):
+- Hosted on Fly.io (owner already uses it), not Tailscale, so a friend can use it too.
+  One `shared-cpu-1x` 256 MB machine that stops when idle, SQLite on a 1 GB volume at
+  `/data`, HTTPS at `<app>.fly.dev`. Measured locally: ~1.9 s startup on a fresh DB,
+  ~124 MB peak memory including a login.
+- Accounts: `users` table; passwords hashed with stdlib scrypt (`app/core/passwords.py`);
+  no sign-up page, accounts made with `python -m app.manage add-user`. Failed logins
+  lock a username for 15 minutes after 10 attempts (in memory, `app/core/throttle.py`).
+- Sessions: Starlette `SessionMiddleware` (signed cookie via `itsdangerous`), HttpOnly,
+  SameSite=Lax (blocks cross-site form posts), Secure in production, ~6 months.
+  Key from the `FOOD_MANAGER_SECRET_KEY` Fly secret; locally a gitignored
+  `data/.secret_key`.
+- Separate pantries: `items.owner_id`; `PantryService` is constructed for one user and
+  every query is scoped to them; another user's item id is a 404. The expiring-soon
+  window is per user. Learned shelf-life aliases are shared.
+- Public without login: `/login`, `/health`, manifest, `/sw.js`, `/offline`, `/static`,
+  so the app installs and works offline before signing in.
+
 ## 4. Recipes
 
 **Decision:** TheMealDB first; fetch the whole catalog once (by first letter a–z) into

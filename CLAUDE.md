@@ -8,15 +8,17 @@ recommends recipes that use up what's expiring.
 - **Architecture, schema, data and all design decisions:** [docs/DESIGN.md](docs/DESIGN.md)
 - **What to do next:** the "Next steps" section at the bottom of this file
 
-## Status (as of 2026-10-28)
+## Status (as of 2026-10-30)
 
 Phase 1 (pantry tracker) is built and tested: steps 1-8 in docs/DESIGN.md section 7 are
-done, 226 tests pass, everything is pushed to `main` on
-https://github.com/davyn1/food-manager.
+done, plus accounts (login, separate pantry per person) and Fly.io deploy config.
+279 tests pass; everything is pushed to `main` on https://github.com/davyn1/food-manager.
 
-Not done yet: installing on a real phone. That needs HTTPS. The chosen route is Tailscale
-(private to the owner's devices). Step-by-step instructions are in README.md, "Private
-HTTPS with Tailscale". Tailscale was not installed on the dev PC yet.
+Users: the owner and one friend, each with their own pantry. Hosting: Fly.io (the owner
+already uses Fly for another app). Tailscale was considered and dropped.
+
+Not done yet: the first deploy to Fly and installing on the phones. Exact commands are in
+README.md, "Deploy to Fly.io". flyctl is installed on the dev PC and signed in.
 
 ## How to work on this project
 
@@ -40,7 +42,9 @@ app/
     expiration.py  expiration estimates, user-date resolution, expiry status
     schemas.py     all Pydantic models and enums
   db/            SQLAlchemy models, session, seeding, migrations helper, alias repo
-  services/      pantry.py: PantryService (add/move/open/date/use/discard + queries)
+  services/      pantry.py: PantryService for one owner (add/move/open/date/use/discard
+                 + queries); users.py: accounts and login
+  manage.py      CLI: add-user / set-password / list-users (no sign-up page)
   inputs/        InputSource protocol (Phase 3 seam: every source yields ItemDraft)
   web/           FastAPI pages (pages.py), PWA routes (pwa.py), templates, static
   main.py        create_app() factory: migrates + seeds on startup
@@ -58,6 +62,12 @@ tests/           pytest; conftest.py has a seeded-DB template fixture and a Cloc
 - **User dates always win.** Every change that affects expiration goes through
   `PantryService._recalculate`. Never write `expires_on` anywhere else.
 - **Transactions:** service methods flush; the caller (web route) commits.
+- **Separate pantries:** `PantryService` is built for one user; every items query goes
+  through `_items()` / `_row()`, which filter on `owner_id`. Another user's item must
+  behave exactly like a missing one (404). Never query `ItemRow` without the owner filter.
+- **Login:** pages get the user via the `get_pantry` dependency, which redirects to
+  `/login` when signed out. Only `/login`, `/health`, the PWA files, `/offline` and
+  `/static` are public.
 - **Storage clock:** only freezer moves restart it (`restarts_clock`). Pantry <-> fridge
   keeps the original date.
 - **Conservative estimates:** use FoodKeeper's minimum days. Perishable categories get 0
@@ -99,15 +109,22 @@ First-time setup on a new machine is in README.md ("Setup").
 - **Web tests** use `TestClient(app, follow_redirects=False)` so redirects can be asserted.
 - **Without `--reload`,** uvicorn won't pick up Python changes; restart it.
 - **`.claude/` is gitignored** (machine-specific paths, e.g. launch.json).
+- **Uvicorn on Windows expands a bare `*`** in arguments into file names, so locally use
+  `--forwarded-allow-ips=*`. The Dockerfile's exec form passes `*` through fine on Linux.
+- **Tests lower the scrypt cost** (autouse fixture in conftest) so password hashing is fast.
+  `tests/conftest.py` has `make_app` and `signed_in_client` for web tests.
 - **Starlette deprecation warning** about `httpx` in tests is known and harmless; switching
   to `httpx2` would be a new dependency, so ask first.
 
 ## Next steps
 
-### Now: install on the phone
-- [ ] Install Tailscale on PC and phone, enable HTTPS certificates, run the app, and
-      `tailscale serve --bg 8000` (README.md, "Private HTTPS with Tailscale").
-- [ ] Install from the phone: iPhone via Safari > Share > Add to Home Screen; Android via
+### Now: deploy and install on the phones
+- [ ] Deploy to Fly.io (README.md, "Deploy to Fly.io"): launch, volume, secret, deploy.
+      Deploying costs money and is public-facing, so confirm with the owner before running
+      these commands.
+- [ ] Create both accounts with `fly ssh console --pty -C "python -m app.manage add-user ..."`.
+      The owner types the passwords; never enter or choose passwords for them.
+- [ ] Install from each phone: iPhone via Safari > Share > Add to Home Screen; Android via
       Chrome > Install. Check that it opens full screen with the jar icon.
 - [ ] Use it for a few days and note anything awkward one-handed.
 
@@ -118,7 +135,7 @@ First-time setup on a new machine is in README.md ("Setup").
 - [ ] Matching misses: "smoked salmon" matches fresh fish (1 day instead of 14).
       FoodKeeper only has homemade bread. The baked goods and condiments fallbacks are
       rough. Fix with curated aliases in `data/aliases_extra.json`.
-- [ ] Login, if the app will ever be on a public URL (not needed behind Tailscale).
+- [ ] Password change from the app (today only via `python -m app.manage set-password`).
 
 ### Phase 2: recipe recommendations (propose first, then build)
 Decisions already approved (docs/DESIGN.md section 4):

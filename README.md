@@ -67,18 +67,83 @@ the home screen needs HTTPS; see below):
 Then open `http://<your PC's local IP>:8000` on the phone. Windows Firewall may ask
 to allow Python on private networks.
 
+## Accounts
+
+There is no sign-up page. Create accounts from the command line (you'll be asked for the
+password twice; it isn't shown while you type):
+
+```powershell
+.\.venv\Scripts\python.exe -m app.manage add-user davy
+```
+
+Other commands: `set-password <username>` and `list-users`. Each account has its own
+pantry.
+
+## Deploy to Fly.io
+
+The app runs on one small Fly machine (256 MB, about $2.20/month) with a 1 GB volume
+for the SQLite database (about $0.15/month). It stops when nobody is using it and starts
+again on the next visit (a second or two). Fly builds the image remotely, so Docker isn't
+needed locally. The commands below use region `lax` (Los Angeles); pick another with
+`fly platform regions` if you like, and use it everywhere.
+
+1. Create the app from the config in this repo. The name must be unique on Fly and
+   becomes the address `https://<app-name>.fly.dev`:
+
+   ```powershell
+   fly launch --no-deploy --copy-config --name <app-name> --region lax
+   ```
+
+2. Create the volume for the database:
+
+   ```powershell
+   fly volumes create pantry_data --size 1 --region lax --yes
+   ```
+
+3. Create the secret key that signs logins (random, never committed):
+
+   ```powershell
+   fly secrets set --stage "FOOD_MANAGER_SECRET_KEY=$(.\.venv\Scripts\python.exe -c 'import secrets; print(secrets.token_urlsafe(48))')"
+   ```
+
+4. Deploy (one machine, since SQLite lives on one volume):
+
+   ```powershell
+   fly deploy --ha=false
+   ```
+
+5. Open `https://<app-name>.fly.dev` once to wake the machine, then create the two
+   accounts. Each command asks for that person's password:
+
+   ```powershell
+   fly ssh console --pty -C "python -m app.manage add-user davy"
+   ```
+
+   ```powershell
+   fly ssh console --pty -C "python -m app.manage add-user <friend>"
+   ```
+
+6. Sign in on each phone and install it (below).
+
+Later updates: commit, then run `fly deploy`. Logs: `fly logs`. Fly keeps automatic
+daily snapshots of the volume; list them with `fly volumes list` and
+`fly volumes snapshots list <volume-id>`.
+
 ## Install on a phone
 
-Installing needs the app served over HTTPS. Once it is:
+Installing needs the app served over HTTPS (the Fly.io address above). Then:
 
 - **iPhone (Safari):** open the site, tap **Share**, then **Add to Home Screen**.
 - **Android (Chrome):** open the site and tap **Install** in the banner, or use the
   menu's **Install app** / **Add to Home screen**.
 
-The app has no login yet, so only serve it somewhere private (or add a login before
-putting it on a public URL). See [docs/DESIGN.md](docs/DESIGN.md) for iOS limitations.
+On iPhone the installed app keeps its own sign-in, separate from Safari, so you sign in
+once more the first time you open it from the home screen. You then stay signed in for
+about six months. See [docs/DESIGN.md](docs/DESIGN.md) for iOS limitations.
 
-### Private HTTPS with Tailscale
+### Alternative: private HTTPS with Tailscale
+
+Not used for now (the app is hosted on Fly.io), but kept for reference.
 
 Tailscale gives this PC an HTTPS address that only your own signed-in devices can reach.
 The phone can use the app whenever the PC is on and the app is running.
