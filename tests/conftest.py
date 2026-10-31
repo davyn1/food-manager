@@ -67,18 +67,23 @@ def seeded_db_copy(seeded_db_template: Path, tmp_path: Path) -> Path:
 TEST_PASSWORD = "test-password-1"
 
 
-def create_user(app: FastAPI, username: str, password: str = TEST_PASSWORD) -> User:
+def create_user(app: FastAPI, username: str, password: str = TEST_PASSWORD, *, is_admin: bool = False) -> User:
     with app.state.session_factory() as session, session.begin():
-        return UserService(session).create_user(username, password)
+        return UserService(session).create_user(username, password, is_admin=is_admin)
 
 
-def signed_in_client(app: FastAPI, username: str = "tester") -> TestClient:
-    """A client for `app`, signed in as a newly created user. Doesn't follow redirects."""
-    create_user(app, username)
+def sign_in_client(app: FastAPI, username: str, password: str = TEST_PASSWORD) -> TestClient:
+    """A client for `app` signed in as an existing user. Doesn't follow redirects."""
     client = TestClient(app, follow_redirects=False)
-    response = client.post("/login", data={"username": username, "password": TEST_PASSWORD})
+    response = client.post("/login", data={"username": username, "password": password})
     assert response.status_code == 303, response.text
     return client
+
+
+def signed_in_client(app: FastAPI, username: str = "tester", *, is_admin: bool = False) -> TestClient:
+    """A client for `app`, signed in as a newly created user. Doesn't follow redirects."""
+    create_user(app, username, is_admin=is_admin)
+    return sign_in_client(app, username)
 
 
 def make_app(db_path: Path, today: Callable[[], date] = date.today) -> FastAPI:

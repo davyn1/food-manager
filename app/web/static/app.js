@@ -52,6 +52,37 @@
     refresh();
   });
 
+  // Invite links: Copy, Share (phones), and select-all when the field is tapped.
+  function setupShareButtons() {
+    document.querySelectorAll("[data-share]").forEach(function (button) {
+      button.hidden = !navigator.share;
+    });
+  }
+
+  document.addEventListener("focusin", function (event) {
+    if (event.target.matches && event.target.matches("[data-select-on-focus]")) {
+      event.target.select();
+    }
+  });
+
+  document.addEventListener("click", function (event) {
+    var copy = event.target.closest("[data-copy]");
+    if (copy) {
+      var text = copy.dataset.copy;
+      var done = function () { copy.textContent = "Copied"; };
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(done, function () {});
+      }
+    }
+    var share = event.target.closest("[data-share]");
+    if (share && navigator.share) {
+      navigator.share({ title: "Join me on Pantry", url: share.dataset.share }).catch(function () {});
+    }
+  });
+
+  document.addEventListener("DOMContentLoaded", setupShareButtons);
+  document.addEventListener("htmx:afterSettle", setupShareButtons);
+
   document.addEventListener("click", function (event) {
     if (event.target.closest("[data-install-button]") && deferredPrompt) {
       deferredPrompt.prompt();

@@ -15,7 +15,7 @@ from app.db.migrate import upgrade_to_head
 from app.db.seed import load_data_files, seed_reference_data
 from app.db.session import make_engine, make_session_factory
 from app.db.shelf_life_repo import load_shelf_life_index
-from app.web import auth, pages, pwa
+from app.web import account, auth, pages, pwa
 from app.web.deps import LoginRequired
 from app.web.templating import STATIC_DIR
 
@@ -69,5 +69,6 @@ def create_app(
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     app.include_router(pwa.router)
     app.include_router(auth.router)
+    app.include_router(account.router)
     app.include_router(pages.router)
     return app

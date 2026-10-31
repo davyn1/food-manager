@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  {# Never send page URLs (e.g. a sign-up link's token) to other sites. #}
+  <meta name="referrer" content="same-origin">
   <meta name="theme-color" content="#f6f5f1" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#121614" media="(prefers-color-scheme: dark)">
   {# Swap 422 responses too, so form errors render in place. #}

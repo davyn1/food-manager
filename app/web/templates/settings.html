@@ -2,7 +2,11 @@
 {% block title %}Settings{% endblock %}
 {% block heading %}Settings{% endblock %}
 {% block content %}
-{% if saved %}<p class="notice" role="status">Saved</p>{% endif %}
+{% if saved == "password" %}
+<p class="notice" role="status">Password changed. Your other devices are signed out.</p>
+{% elif saved %}
+<p class="notice" role="status">Saved</p>
+{% endif %}
 {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
 <form class="card" method="post" action="/settings">
   <label>“Expiring soon” means within this many days
@@ -13,7 +17,28 @@
 
 <section class="card account">
   <h2>Account</h2>
-  <p>Signed in as <strong>{{ user.username }}</strong></p>
+  <p>Signed in as <strong>{{ user.username }}</strong>{% if user.is_admin %} (admin){% endif %}</p>
+  {% if user.is_admin %}
+  <a class="button wide" href="/invites">Invite friends</a>
+  {% endif %}
+
+  <details class="more" {% if password_error %}open{% endif %}>
+    <summary>Change password</summary>
+    <form method="post" action="/settings/password">
+      {% if password_error %}<p class="error" role="alert">{{ password_error }}</p>{% endif %}
+      <label>Current password
+        <input name="current" type="password" autocomplete="current-password" required>
+      </label>
+      <label>New password (at least 8 characters)
+        <input name="new" type="password" autocomplete="new-password" minlength="8" required>
+      </label>
+      <label>New password again
+        <input name="confirm" type="password" autocomplete="new-password" minlength="8" required>
+      </label>
+      <button class="primary wide">Change password</button>
+    </form>
+  </details>
+
   <form method="post" action="/logout">
     <button class="wide">Sign out</button>
   </form>

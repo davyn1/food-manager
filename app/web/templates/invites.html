@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Invite friends{% endblock %}
+{% block heading %}Invite friends{% endblock %}
+{% block content %}
+{% if new_link %}
+<section class="card new-invite" role="status">
+  <h2>New invite link</h2>
+  <p>Send this to one friend. It works once and expires in 7 days.
+     <strong>It's only shown now</strong>, so copy it before leaving this page.</p>
+  <label class="visually-hidden" for="invite-link">Invite link</label>
+  <input id="invite-link" type="text" value="{{ new_link }}" readonly data-select-on-focus>
+  <div class="button-grid">
+    <button type="button" class="primary" data-copy="{{ new_link }}">Copy link</button>
+    <button type="button" data-share="{{ new_link }}" hidden>Share…</button>
+  </div>
+</section>
+{% endif %}
+
+<form method="post" action="/invites">
+  <button class="{{ 'wide' if new_link else 'primary wide' }}">Create invite link</button>
+</form>
+
+<section>
+  <h2>Invites</h2>
+  {% if invites %}
+  <ul class="invites">
+    {% for invite in invites %}
+    <li class="card">
+      {% if invite.used_by %}
+      <span class="item-name">Used by {{ invite.used_by }}</span>
+      <span class="item-meta">{{ short_date(invite.used_at.date()) }}</span>
+      {% elif invite.expires_at <= now %}
+      <span class="item-name muted">Expired</span>
+      <span class="item-meta">Created {{ short_date(invite.created_at.date()) }}</span>
+      {% else %}
+      <span class="item-name">Waiting to be used</span>
+      <span class="item-meta">Expires {{ short_date(invite.expires_at.date()) }}</span>
+      <form method="post" action="/invites/{{ invite.id }}/revoke">
+        <button class="link danger-text">Cancel this invite</button>
+      </form>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty">No invites yet.</p>
+  {% endif %}
+</section>
+<a class="more-link" href="/settings">Back to settings</a>
+{% endblock %}

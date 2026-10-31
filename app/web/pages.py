@@ -61,14 +61,14 @@ def safe_next(next_url: str | None, default: str) -> str:
     return default
 
 
-def _redirect(url: str, **params: Any) -> RedirectResponse:
+def redirect(url: str, **params: Any) -> RedirectResponse:
     if params:
         separator = "&" if "?" in url else "?"
         url = f"{url}{separator}{urlencode(params)}"
     return RedirectResponse(url, status_code=303)
 
 
-def _render(request: Request, pantry: PantryService, template: str, status_code: int = 200, **context: Any) -> HTMLResponse:
+def render(request: Request, pantry: PantryService, template: str, status_code: int = 200, **context: Any) -> HTMLResponse:
     today = pantry.today()
     return templates.TemplateResponse(
         request,
@@ -98,14 +98,14 @@ def _item_or_404(request: Request, pantry: PantryService, item_id: int) -> Any:
     try:
         return pantry.get_item(item_id)
     except ItemNotFound:
-        return _render(request, pantry, "not_found.html", status_code=404)
+        return render(request, pantry, "not_found.html", status_code=404)
 
 
 # --- home and adding ---------------------------------------------------------------
 
 @router.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def home(request: Request, pantry: Pantry, done: str | None = None, item: int | None = None) -> HTMLResponse:
-    return _render(
+    return render(
         request, pantry, "home.html",
         expired=pantry.expired(),
         soon=pantry.expiring_soon(),
@@ -168,12 +168,12 @@ def add_item(
     except (InvalidOperation, ValueError) as exc:
         return _home_with_error(request, pantry, form, str(exc))
     pantry.session.commit()
-    return _redirect("/", done="added", item=item.id)
+    return redirect("/", done="added", item=item.id)
 
 
 def _home_with_error(request: Request, pantry: PantryService, form: dict[str, Any], error: str) -> HTMLResponse:
     pantry.session.rollback()
-    return _render(
+    return render(
         request, pantry, "home.html", status_code=422,
         expired=pantry.expired(), soon=pantry.expiring_soon(), form=form, error=error, notice=None,
     )
@@ -189,7 +189,7 @@ def list_items(
     items = pantry.list_items(location=location)
     if sort == "name":
         items.sort(key=lambda i: i.name.lower())
-    return _render(
+    return render(
         request, pantry, "items.html",
         items=items, location=location, sort=sort, notice=_notice(pantry, done, item),
     )
@@ -197,7 +197,7 @@ def list_items(
 
 @router.get("/expired", response_class=HTMLResponse)
 def expired(request: Request, pantry: Pantry, done: str | None = None, item: int | None = None) -> HTMLResponse:
-    return _render(request, pantry, "expired.html", items=pantry.expired(), notice=_notice(pantry, done, item))
+    return render(request, pantry, "expired.html", items=pantry.expired(), notice=_notice(pantry, done, item))
 
 
 # --- one item ----------------------------------------------------------------------
@@ -207,7 +207,7 @@ def item_detail(request: Request, pantry: Pantry, item_id: int) -> Response:
     item = _item_or_404(request, pantry, item_id)
     if isinstance(item, Response):
         return item
-    return _render(request, pantry, "item.html", item=item, error=None)
+    return render(request, pantry, "item.html", item=item, error=None)
 
 
 def _act(request: Request, pantry: PantryService, item_id: int, action: Any, next_url: str | None,
@@ -216,19 +216,19 @@ def _act(request: Request, pantry: PantryService, item_id: int, action: Any, nex
     try:
         result = action()
     except ItemNotFound:
-        return _render(request, pantry, "not_found.html", status_code=404)
+        return render(request, pantry, "not_found.html", status_code=404)
     except (InvalidOperation, KeyError) as exc:
         pantry.session.rollback()
         message = str(exc) if isinstance(exc, InvalidOperation) else "Unknown product"
         item = _item_or_404(request, pantry, item_id)
         if isinstance(item, Response):
             return item
-        return _render(request, pantry, "item.html", status_code=422, item=item, error=message)
+        return render(request, pantry, "item.html", status_code=422, item=item, error=message)
     pantry.session.commit()
     target = safe_next(next_url, f"/items/{item_id}")
     if done:
-        return _redirect(target, done=done, item=result.id)
-    return _redirect(target)
+        return redirect(target, done=done, item=result.id)
+    return redirect(target)
 
 
 @router.post("/items/{item_id}/move")
@@ -275,7 +275,7 @@ def match_page(request: Request, pantry: Pantry, item_id: int, q: str | None = N
         return item
     query = q if q is not None else item.name
     candidates = pantry.index.search(query, category=item.category, limit=12)
-    return _render(request, pantry, "match.html", item=item, q=query, candidates=candidates)
+    return render(request, pantry, "match.html", item=item, q=query, candidates=candidates)
 
 
 @router.post("/items/{item_id}/match")
@@ -291,8 +291,9 @@ def set_match(request: Request, pantry: Pantry, item_id: int, product_id: OptStr
 # --- settings ----------------------------------------------------------------------
 
 @router.get("/settings", response_class=HTMLResponse)
-def settings_page(request: Request, pantry: Pantry, saved: bool = False) -> HTMLResponse:
-    return _render(request, pantry, "settings.html", saved=saved, error=None)
+def settings_page(request: Request, pantry: Pantry, saved: str | None = None) -> HTMLResponse:
+    # `saved` only selects one of the template's fixed messages; it's never displayed.
+    return render(request, pantry, "settings.html", saved=saved, error=None)
 
 
 @router.post("/settings")
@@ -304,6 +305,6 @@ def save_settings(request: Request, pantry: Pantry, expiring_soon_days: OptStr =
         pantry.set_expiring_soon_days(int(value))
     except InvalidOperation as exc:
         pantry.session.rollback()
-        return _render(request, pantry, "settings.html", status_code=422, saved=False, error=str(exc))
+        return render(request, pantry, "settings.html", status_code=422, saved=None, error=str(exc))
     pantry.session.commit()
-    return _redirect("/settings", saved="true")
+    return redirect("/settings", saved="true")

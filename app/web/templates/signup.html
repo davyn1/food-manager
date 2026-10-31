@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Create account{% endblock %}
+{% block heading %}Pantry{% endblock %}
+{% block content %}
+{% if invalid %}
+<section class="card">
+  <h2>Invite link not valid</h2>
+  <p>This invite link has already been used, was cancelled, or has expired.
+     Ask whoever sent it for a new one.</p>
+  <a class="button wide" href="/login">Go to sign in</a>
+</section>
+{% elif signed_in %}
+<section class="card">
+  <h2>You're already signed in</h2>
+  <p>To create a new account with this invite, sign out first. The link stays valid.</p>
+  <form method="post" action="/logout">
+    <button class="primary wide">Sign out</button>
+  </form>
+</section>
+{% else %}
+<form class="card login" method="post" action="/signup/{{ token }}">
+  <h2>Create your account</h2>
+  <p class="hint">You've been invited to Pantry. Your pantry is private to you.</p>
+  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+  <label>Username (3-32 letters, numbers, . _ -)
+    <input name="username" type="text" value="{{ username }}" autocomplete="username"
+           autocapitalize="none" autocorrect="off" spellcheck="false" minlength="3" maxlength="32" required autofocus>
+  </label>
+  <label>Password (at least 8 characters)
+    <input name="password" type="password" autocomplete="new-password" minlength="8" required>
+  </label>
+  <label>Password again
+    <input name="confirm" type="password" autocomplete="new-password" minlength="8" required>
+  </label>
+  <button class="primary wide">Create account</button>
+</form>
+{% endif %}
+{% endblock %}
