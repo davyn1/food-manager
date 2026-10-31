@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from pydantic import ValidationError
 
 from app.core.schemas import Category, ItemCreate, ItemState, ItemStatus, Location
-from app.services.pantry import InvalidOperation, ItemNotFound, PantryService
+from app.services.pantry import InvalidOperation, ItemNotFound, NeedsDate, PantryService
 from app.web.deps import get_pantry
 from app.web.templating import templates
 
@@ -173,17 +173,26 @@ def add_item(
     except ValidationError as exc:
         error = "Please enter a name" if any(e["loc"] == ("name",) for e in exc.errors()) else "Please check the details"
         return _home_with_error(request, pantry, form, error)
+    except NeedsDate as exc:
+        return _home_with_error(
+            request, pantry, form,
+            f"Never heard of “{exc.name}”, so I can’t guess when it goes bad. Tap when it does, "
+            "or pick a category under More options.",
+            needs_date=True,
+        )
     except (InvalidOperation, ValueError) as exc:
         return _home_with_error(request, pantry, form, str(exc))
     pantry.session.commit()
     return redirect("/", done="added", item=item.id)
 
 
-def _home_with_error(request: Request, pantry: PantryService, form: dict[str, Any], error: str) -> HTMLResponse:
+def _home_with_error(request: Request, pantry: PantryService, form: dict[str, Any], error: str,
+                     needs_date: bool = False) -> HTMLResponse:
     pantry.session.rollback()
     return render(
         request, pantry, "home.html", status_code=422,
         expired=pantry.expired(), soon=pantry.expiring_soon(), form=form, error=error, notice=None,
+        needs_date=needs_date,
     )
 
 

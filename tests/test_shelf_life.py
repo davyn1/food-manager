@@ -156,6 +156,24 @@ def test_real_data_common_items(real_index: ShelfLifeIndex, name: str, product_i
     assert match.product.id == product_id, f"{name} -> #{match.product.id} {match.product.name}"
 
 
+@pytest.mark.parametrize(
+    "dish",
+    ["Chinese stir fry", "chicken stir fry", "pad thai", "kimchi fried rice", "turkey sandwich", "tteokbokki"],
+)
+def test_real_data_unfamiliar_dishes_are_not_forced_into_a_match(real_index: ShelfLifeIndex, dish: str) -> None:
+    match = real_index.match(dish)
+    assert match.product is None, f"{dish} -> #{match.product.id} {match.product.name}"
+
+
+@pytest.mark.parametrize(
+    ("name", "product_id"),
+    [("greek yogurt", 33), ("baby spinach", 291), ("chicken soup", 193), ("skim milk", 27), ("smoked salmon", 146)],
+)
+def test_real_data_good_partial_matches_still_match(real_index: ShelfLifeIndex, name: str, product_id: int) -> None:
+    match = real_index.match(name)
+    assert match.product is not None and match.product.id == product_id
+
+
 def test_real_data_every_product_name_matches_something(real_index: ShelfLifeIndex) -> None:
     unmatched = []
     for product_id in range(1, 700):

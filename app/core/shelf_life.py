@@ -33,7 +33,9 @@ from app.core.schemas import (
 # so it counts more toward a match than the modifiers before it.
 HEAD_WEIGHT = 2.0
 # Minimum weighted share of query tokens a product must contain to count as a match.
-MIN_SCORE = 0.5
+# Strictly more than half: matching only the last word of a three-word dish
+# ("chinese stir fry" -> fries) is a coincidence, not a match.
+MIN_SCORE = 0.6
 # Typo correction: rapidfuzz ratio needed, and the shortest token we try to correct.
 FUZZY_MIN_RATIO = 85
 FUZZY_MIN_LENGTH = 4
@@ -58,15 +60,33 @@ class ShelfLifeMatch(BaseModel):
 class _Entry:
     product: ShelfLifeProduct
     name_tokens: frozenset[str]
-    all_tokens: frozenset[str]
+    subtitle_tokens: frozenset[str]
+    all_tokens: frozenset[str]  # name + subtitle + keywords
 
 
-def _product_tokens(product: ShelfLifeProduct) -> tuple[frozenset[str], frozenset[str]]:
+def _product_tokens(product: ShelfLifeProduct) -> tuple[frozenset[str], frozenset[str], frozenset[str]]:
     names = frozenset(name_tokens(product.name))
-    everything = set(names)
-    for text in (product.subtitle or "", *product.keywords):
+    subtitle = frozenset(name_tokens(product.subtitle or ""))
+    everything = set(names) | subtitle
+    for text in product.keywords:
         everything.update(name_tokens(text))
-    return names, frozenset(everything)
+    return names, subtitle, frozenset(everything)
+
+
+def _plausible_partial(entry: _Entry, query: list[str]) -> bool:
+    """Whether a product covering only part of the name is really that food.
+
+    "greek yogurt" -> Yogurt and "baby spinach" -> Lettuce (leaf, spinach) are; "pad thai"
+    -> Thai red curry paste is not: the shared word must name the product (in its name or
+    subtitle, not just a keyword), and cover at least half of the product's name unless the
+    subtitle names it outright.
+    """
+    head = query[-1]
+    if head in entry.subtitle_tokens:
+        return True
+    if head not in entry.name_tokens:
+        return False
+    return len(entry.name_tokens & set(query)) / len(entry.name_tokens) >= 0.5
 
 
 class ShelfLifeIndex:
@@ -150,12 +170,16 @@ class ShelfLifeIndex:
         weights[-1] = HEAD_WEIGHT if len(query) > 1 else 1.0
         total_weight = sum(weights)
         ranked = self._ranked(query, weights, category, MIN_SCORE)
-        best = ranked[0] if ranked else None
+        best = next(
+            ((entry, score) for entry, score in ranked if score >= 1.0 or _plausible_partial(entry, query)),
+            None,
+        )
 
         # A partial match ("skim milk" only matching "lactose-free milk" on "milk") defers
-        # to a curated alias for the head noun, which names the generic product.
+        # to a curated alias for the head noun, which names the generic product. Only for
+        # two-word names: "kimchi fried rice" is a dish, not a kind of rice.
         head = query[-1]
-        if (best is None or best[1] < 1.0) and len(query) > 1 and head in self._aliases:
+        if (best is None or best[1] < 1.0) and len(query) == 2 and head in self._aliases:
             return ShelfLifeMatch(
                 product=self._products[self._aliases[head]],
                 method=MatchMethod.ALIAS,

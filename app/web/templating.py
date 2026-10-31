@@ -1,7 +1,7 @@
 """Jinja setup and small display helpers shared by all templates."""
 
 import hashlib
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 from fastapi.templating import Jinja2Templates
@@ -99,6 +99,14 @@ def dot_parts(expires_on: date, today: date) -> tuple[str, str]:
     return str(round(remaining / 365)), "yr"
 
 
+QUICK_DATES: tuple[tuple[str, int], ...] = (("3 days", 3), ("1 week", 7), ("2 weeks", 14), ("1 month", 30))
+
+
+def date_choices(today: date) -> list[tuple[str, str]]:
+    """One-tap "goes bad in…" choices for food the app doesn't know: (label, ISO date)."""
+    return [(label, (today + timedelta(days=days)).isoformat()) for label, days in QUICK_DATES]
+
+
 def short_date(value: date) -> str:
     return f"{value:%a} {value:%b} {value.day}"
 
@@ -125,6 +133,7 @@ templates.env.globals.update(
     expiry_css=expiry_css,
     dot_level=dot_level,
     dot_parts=dot_parts,
+    date_choices=date_choices,
     short_date=short_date,
     quantity_text=quantity_text,
 )

@@ -100,6 +100,13 @@ Matching and estimation notes (step 4):
   ("skim milk" -> milk).
 - `data/aliases_extra.json`: about 20 curated aliases for ambiguous common names
   (milk, rice, ham, lemons, onions...).
+- Unfamiliar food (2026-10-31): a match must cover more than half the weighted name
+  (`MIN_SCORE = 0.6`), and a partial match must name the product, not just share a keyword
+  ("greek yogurt" -> Yogurt yes; "chinese stir fry" -> fries and "pad thai" -> curry paste
+  no). The head-noun alias fallback only applies to two-word names. When nothing matches
+  and there's no category or date, the app doesn't guess: adding asks "When does it go
+  bad?" with one-tap 3 days / 1 week / 2 weeks / 1 month / pick a date (stored as the
+  user's date), or a category to estimate from (`NeedsDate`, `ItemPreview.needs_date`).
 - `app/core/expiration.py`: the storage clock restarts only on freezer moves. Opening
   doesn't shorten an item whose product has no separate opened figure (e.g. butter).
   "Indefinitely" becomes 10 years so it still sorts. Notes become UI flags

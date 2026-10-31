@@ -1,0 +1,8 @@
+{# One-tap "goes bad in…" buttons for food the app doesn't recognize. They fill the add
+   form's date field (app.js); "Pick a date" opens the date picker. Expects: today. #}
+<div class="date-chips" role="group" aria-label="When does it go bad?">
+  {% for label, iso in date_choices(today) %}
+  <button type="button" class="chip" data-set-date="{{ iso }}">{{ label }}</button>
+  {% endfor %}
+  <button type="button" class="chip" data-pick-date>Pick a date</button>
+</div>

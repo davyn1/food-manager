@@ -14,7 +14,7 @@
   <div class="label-text">
     <p class="big">{{ expiry_text(item.expires_on, today) }}</p>
     <p>Use by {{ short_date(item.expires_on) }},
-      {% if item.expiration_source.value == "user" %}printed date{% else %}estimated{% endif %}</p>
+      {% if item.expiration_source.value == "user" %}your date{% else %}estimated{% endif %}</p>
   </div>
   {% else %}
   <span class="dot dot-big dot-done dot-word" aria-hidden="true"><span class="dot-num">{{ "used" if item.status == ItemStatus.USED else "out" }}</span></span>

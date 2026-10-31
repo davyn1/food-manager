@@ -214,6 +214,14 @@ button:disabled { opacity: 1; cursor: default; }
 
 .where { display: inline-flex; align-items: center; gap: 5px; }
 
+.preview-unknown { display: grid; gap: 10px; }
+.date-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 6px; }
+.date-chips .chip {
+  min-height: 44px; border: 1px solid var(--rule); background: var(--field);
+  font-weight: 700; cursor: pointer;
+}
+.date-chips .chip[aria-pressed="true"] { background: var(--tape); border-color: var(--tape); color: var(--tape-ink); }
+
 details.more, details.fold { margin-top: 6px; }
 details.more summary, details.fold summary {
   min-height: var(--tap);

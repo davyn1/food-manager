@@ -76,7 +76,34 @@ def test_preview_shows_match_and_estimate(client: TestClient) -> None:
 def test_preview_flags_and_blank(client: TestClient) -> None:
     assert "printed date" in client.get("/add/preview", params={"name": "milk"}).text
     assert client.get("/add/preview", params={"name": ""}).text == ""
-    assert "No exact match" in client.get("/add/preview", params={"name": "zzzz"}).text
+    assert "Never heard of" in client.get("/add/preview", params={"name": "zzzz"}).text
+
+
+def test_unknown_food_asks_for_a_date(client: TestClient) -> None:
+    preview = client.get("/add/preview", params={"name": "Chinese stir fry"}).text
+    assert "When does it go bad?" in preview
+    assert preview.count("data-set-date=") == 4
+    assert 'data-set-date="2026-01-13"' in preview  # 3 days from D0
+
+    response = client.post("/items", data={"name": "Chinese stir fry"})
+    assert response.status_code == 422
+    assert "so I can’t guess when it goes bad" in response.text
+    assert "data-set-date=" in response.text
+    assert 'value="Chinese stir fry"' in response.text
+
+    item_id = add(client, name="Chinese stir fry", user_expires_on="2026-01-13")
+    assert "3 days left" in client.get(f"/items/{item_id}").text
+
+
+def test_unknown_food_with_category_is_estimated(client: TestClient) -> None:
+    item_id = add(client, name="Chinese stir fry", category="leftovers")
+    assert "3 days left" in client.get(f"/items/{item_id}").text  # USDA leftovers guidance
+
+
+def test_preview_with_your_date_for_unknown_food(client: TestClient) -> None:
+    preview = client.get("/add/preview", params={"name": "pad thai", "user_expires_on": "2026-01-17"}).text
+    assert "Never heard of" not in preview
+    assert "Your date: Sat Jan 17" in preview
 
 
 def test_preview_does_not_save(client: TestClient) -> None:
@@ -126,7 +153,7 @@ def test_move_open_and_date_actions(client: TestClient) -> None:
     assert "9 months left" in client.get(f"/items/{item_id}").text  # 270 days
 
     client.post(f"/items/{item_id}/date", data={"user_expires_on": "2026-02-01"})
-    assert "printed date" in client.get(f"/items/{item_id}").text
+    assert "your date" in client.get(f"/items/{item_id}").text
     client.post(f"/items/{item_id}/date", data={"clear": "1"})
     assert "estimated" in client.get(f"/items/{item_id}").text
 

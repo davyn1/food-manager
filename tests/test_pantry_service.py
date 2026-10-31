@@ -21,7 +21,7 @@ from app.core.schemas import (
 from app.db.models import ItemRow, ShelfLifeAliasRow
 from app.db.session import make_engine, make_session_factory
 from app.db.shelf_life_repo import load_shelf_life_index
-from app.services.pantry import InvalidOperation, ItemNotFound, PantryService
+from app.services.pantry import InvalidOperation, ItemNotFound, NeedsDate, PantryService
 from app.services.users import UserService
 from tests.conftest import Clock
 
@@ -91,7 +91,6 @@ def test_add_with_printed_date_uses_it_but_keeps_estimate(pantry: PantryService)
         ("frozen peas", Location.FREEZER),
         ("butter", Location.FRIDGE),
         ("bananas", Location.PANTRY),
-        ("mystery thing", Location.FRIDGE),
     ],
 )
 def test_add_suggests_location(pantry: PantryService, name: str, location: Location) -> None:
@@ -104,11 +103,32 @@ def test_explicit_location_and_category_win(pantry: PantryService) -> None:
     assert item.category is Category.FROZEN
 
 
-def test_unmatched_item_uses_category_defaults(pantry: PantryService) -> None:
-    item = pantry.add_item(ItemCreate(name="mystery thing"))
+def test_unmatched_item_with_category_uses_category_defaults(pantry: PantryService) -> None:
+    item = pantry.add_item(ItemCreate(name="mystery thing", category=Category.OTHER))
     assert item.shelf_life_id is None
     assert item.category is Category.OTHER
+    assert item.location is Location.FRIDGE  # unknown food is safer cold
     assert item.expires_on == days_after(5)  # "other" fridge default
+
+
+def test_unknown_food_without_category_or_date_needs_a_date(pantry: PantryService) -> None:
+    assert pantry.preview(ItemCreate(name="Chinese stir fry")).needs_date is True
+    with pytest.raises(NeedsDate) as exc:
+        pantry.add_item(ItemCreate(name="Chinese stir fry"))
+    assert exc.value.name == "Chinese stir fry"
+    assert pantry.list_items() == []
+
+
+def test_unknown_food_with_a_date_is_added_with_that_date(pantry: PantryService) -> None:
+    item = pantry.add_item(ItemCreate(name="Chinese stir fry", user_expires_on=days_after(3)))
+    assert item.shelf_life_id is None
+    assert item.expires_on == days_after(3)
+    assert item.expiration_source is ExpirationSource.USER
+    assert item.location is Location.FRIDGE
+
+
+def test_recognized_food_never_needs_a_date(pantry: PantryService) -> None:
+    assert pantry.preview(ItemCreate(name="greek yogurt")).needs_date is False
 
 
 def test_package_date_flag_is_stored(pantry: PantryService) -> None:

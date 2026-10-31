@@ -286,3 +286,5 @@ class ItemPreview(BaseModel):
     location: Location
     estimated_expires_on: date
     estimate_flags: frozenset[EstimateFlag] = frozenset()
+    # Unrecognized food with no category or date: adding it needs a date from the user.
+    needs_date: bool = False

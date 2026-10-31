@@ -14,6 +14,7 @@
 
 <form id="add-form" class="card add-form" method="post" action="/items">
   {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+  {% if needs_date %}{% include "partials/date_chips.html" %}{% endif %}
   <div class="add-row">
     <label class="visually-hidden" for="add-name">Item name</label>
     <input id="add-name" name="name" type="text" value="{{ form.name or '' }}" placeholder="What did you buy?"
@@ -24,7 +25,7 @@
   <div id="preview" aria-live="polite" hx-get="/add/preview" hx-include="#add-form"
        hx-trigger="input delay:300ms from:#add-form, change from:#add-form"></div>
 
-  <details class="more" {% if form.location or form.quantity or form.user_expires_on or form.category or form.opened %}open{% endif %}>
+  <details class="more" {% if form.location or form.quantity or form.user_expires_on or form.category or form.opened or needs_date %}open{% endif %}>
     <summary>More options</summary>
 
     <fieldset class="segmented">
@@ -52,7 +53,7 @@
       <span>Already opened</span>
     </label>
 
-    <label>Printed expiration date (optional)
+    <label>Use-by date (the one on the package, or your own)
       <input name="user_expires_on" type="date" value="{{ form.user_expires_on or '' }}">
     </label>
 

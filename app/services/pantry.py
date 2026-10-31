@@ -50,6 +50,14 @@ class InvalidOperation(PantryError):
     pass
 
 
+class NeedsDate(InvalidOperation):
+    """The food isn't recognized and there's no category to estimate from: ask for a date."""
+
+    def __init__(self, name: str) -> None:
+        super().__init__(f"Unknown food {name!r}: set a date or pick a category")
+        self.name = name
+
+
 def product_display_name(product: ShelfLifeProduct) -> str:
     return f"{product.name} ({product.subtitle})" if product.subtitle else product.name
 
@@ -85,6 +93,7 @@ class PantryService:
             location=location,
             estimated_expires_on=estimate.expires_on,
             estimate_flags=estimate.flags,
+            needs_date=product is None and data.category is None and data.user_expires_on is None,
         )
 
     def add_item(self, data: ItemCreate) -> Item:
@@ -95,6 +104,9 @@ class PantryService:
             self._learn_if_corrected(data.name, data.shelf_life_id, data.category)
 
         preview = self.preview(data.model_copy(update={"added_on": added_on}))
+        if preview.needs_date:
+            # Nothing to estimate from; a made-up date is worse than asking.
+            raise NeedsDate(data.name)
         opened_on = data.opened_on or (added_on if data.state is ItemState.OPENED else None)
         row = ItemRow(
             owner_id=self.owner.id,

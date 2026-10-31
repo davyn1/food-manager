@@ -1,17 +1,26 @@
 {% from "partials/icons.html" import icon %}
 {% from "partials/dot.html" import day_dot %}
+{% if preview.needs_date %}
+<div class="preview preview-unknown">
+  <p class="preview-match">Never heard of “{{ data.name }}”. When does it go bad?</p>
+  {% include "partials/date_chips.html" %}
+  <p class="preview-line">Or pick a category under More options and I’ll guess.</p>
+</div>
+{% else %}
 <div class="preview">
   {{ day_dot(data.user_expires_on or preview.estimated_expires_on, today, soon_days, "small") }}
   <span class="preview-text">
     {% if preview.shelf_life_name %}
     <span class="preview-match">{{ preview.shelf_life_name }}</span>
+    {% elif data.user_expires_on %}
+    <span class="preview-match">{{ data.name }}</span>
     {% else %}
     <span class="preview-match muted">No exact match, using {{ CATEGORY_LABELS[preview.category] | lower }} defaults</span>
     {% endif %}
     <span class="preview-line">
       <span class="where">{{ icon(preview.location.value, 16) }}{{ LOCATION_LABELS[preview.location] }}</span>
       {% if data.user_expires_on %}
-      <span>Printed date {{ short_date(data.user_expires_on) }}</span>
+      <span>Your date: {{ short_date(data.user_expires_on) }}</span>
       {% else %}
       <span>{{ expiry_text(preview.estimated_expires_on, today) }} ({{ short_date(preview.estimated_expires_on) }})</span>
       {% endif %}
@@ -21,3 +30,4 @@
     {% endfor %}
   </span>
 </div>
+{% endif %}

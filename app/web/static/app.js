@@ -65,6 +65,28 @@
     }
   });
 
+  // Unknown food: the "goes bad in…" buttons fill the add form's date field, and the
+  // preview refreshes from the change event.
+  document.addEventListener("click", function (event) {
+    var form = document.getElementById("add-form");
+    if (!form) return;
+    var dateInput = form.querySelector('input[name="user_expires_on"]');
+    var setDate = event.target.closest("[data-set-date]");
+    if (setDate && dateInput) {
+      dateInput.value = setDate.dataset.setDate;
+      form.querySelectorAll("[data-set-date]").forEach(function (b) {
+        b.setAttribute("aria-pressed", b === setDate ? "true" : "false");
+      });
+      dateInput.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    if (event.target.closest("[data-pick-date]") && dateInput) {
+      var more = form.querySelector("details.more");
+      if (more) more.open = true;
+      dateInput.focus();
+      try { dateInput.showPicker(); } catch (e) { /* not supported: focus is enough */ }
+    }
+  });
+
   document.addEventListener("click", function (event) {
     var copy = event.target.closest("[data-copy]");
     if (copy) {
