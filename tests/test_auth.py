@@ -131,5 +131,18 @@ def test_secure_cookie_in_production_mode(seeded_db_copy: Path) -> None:
     assert "secure" in response.headers["set-cookie"].lower()
 
 
+def test_two_users_have_separate_pantries(app: FastAPI) -> None:
+    davy = signed_in_client(app, "davy")
+    friend = signed_in_client(app, "friend")
+    response = davy.post("/items", data={"name": "chicken thighs"})
+    item_url = "/items/" + response.headers["location"].split("item=")[1]
+
+    assert "chicken thighs" in davy.get("/items").text
+    assert "chicken thighs" not in friend.get("/items").text
+    assert friend.get(item_url).status_code == 404
+    assert friend.post(item_url + "/used").status_code == 404
+    assert "Expires tomorrow" in davy.get(item_url).text
+
+
 def test_signed_out_pages_hide_the_tab_bar(anon: TestClient) -> None:
     assert 'class="tabbar"' not in anon.get("/login").text

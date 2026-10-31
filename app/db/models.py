@@ -108,9 +108,11 @@ class CategoryDefaultRow(Base):
 
 class ItemRow(Base):
     __tablename__ = "items"
-    __table_args__ = (Index("ix_items_status_expires_on", "status", "expires_on"),)
+    __table_args__ = (Index("ix_items_owner_status_expires_on", "owner_id", "status", "expires_on"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    # Each user has their own pantry; every query filters on this.
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     name: Mapped[str] = mapped_column(String(200))
     normalized_name: Mapped[str] = mapped_column(String(200), index=True)
     shelf_life_id: Mapped[int | None] = mapped_column(ForeignKey("shelf_life_products.id"))

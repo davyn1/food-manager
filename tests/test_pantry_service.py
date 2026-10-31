@@ -22,6 +22,7 @@ from app.db.models import ItemRow, ShelfLifeAliasRow
 from app.db.session import make_engine, make_session_factory
 from app.db.shelf_life_repo import load_shelf_life_index
 from app.services.pantry import InvalidOperation, ItemNotFound, PantryService
+from app.services.users import UserService
 from tests.conftest import Clock
 
 D0 = date(2026, 1, 10)
@@ -46,7 +47,15 @@ def session(seeded_db_copy: Path) -> Iterator[Session]:
 
 @pytest.fixture
 def pantry(session: Session, clock: Clock) -> PantryService:
-    return PantryService(session, load_shelf_life_index(session), today=clock)
+    owner = UserService(session).create_user("owner", "long-enough-pw")
+    return PantryService(session, load_shelf_life_index(session), owner=owner, today=clock)
+
+
+@pytest.fixture
+def other_pantry(session: Session, pantry: PantryService, clock: Clock) -> PantryService:
+    """A second user's pantry, sharing the same database and matcher."""
+    other = UserService(session).create_user("other", "long-enough-pw")
+    return PantryService(session, pantry.index, owner=other, today=clock)
 
 
 def events(session: Session, item_id: int) -> list[ItemEventType]:
@@ -343,5 +352,42 @@ def test_expiring_soon_window_setting(pantry: PantryService) -> None:
     assert pantry.expiring_soon_days() == 3
     pantry.set_expiring_soon_days(7)
     assert pantry.expiring_soon_days() == 7
-    with pytest.raises(InvalidOperation):
-        pantry.set_expiring_soon_days(-1)
+    for bad in (-1, 61):
+        with pytest.raises(InvalidOperation):
+            pantry.set_expiring_soon_days(bad)
+
+
+# --- separate pantries -------------------------------------------------------------
+
+def test_users_only_see_their_own_items(pantry: PantryService, other_pantry: PantryService,
+                                        clock: Clock) -> None:
+    mine = pantry.add_item(ItemCreate(name="milk", user_expires_on=days_after(1)))
+    theirs = other_pantry.add_item(ItemCreate(name="eggs", user_expires_on=days_after(1)))
+    assert [i.id for i in pantry.list_items()] == [mine.id]
+    assert [i.id for i in other_pantry.list_items()] == [theirs.id]
+    assert [i.id for i in pantry.expiring_soon()] == [mine.id]
+    clock.value = days_after(5)
+    assert [i.id for i in other_pantry.expired()] == [theirs.id]
+
+
+def test_other_users_items_cannot_be_read_or_changed(pantry: PantryService,
+                                                     other_pantry: PantryService) -> None:
+    theirs = other_pantry.add_item(ItemCreate(name="eggs"))
+    for action in (
+        lambda: pantry.get_item(theirs.id),
+        lambda: pantry.open_item(theirs.id),
+        lambda: pantry.move_item(theirs.id, Location.FREEZER),
+        lambda: pantry.set_user_expiration(theirs.id, D0),
+        lambda: pantry.set_shelf_life_product(theirs.id, 27),
+        lambda: pantry.use_partial(theirs.id),
+        lambda: pantry.mark_used(theirs.id),
+        lambda: pantry.discard(theirs.id),
+    ):
+        with pytest.raises(ItemNotFound):
+            action()
+    assert other_pantry.get_item(theirs.id).status is ItemStatus.ACTIVE
+
+
+def test_expiring_soon_window_is_per_user(pantry: PantryService, other_pantry: PantryService) -> None:
+    pantry.set_expiring_soon_days(10)
+    assert other_pantry.expiring_soon_days() == 3

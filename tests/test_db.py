@@ -33,6 +33,7 @@ from app.db.models import (
 from app.db.seed import DEFAULT_STAPLES, load_data_files, seed_reference_data
 from app.db.session import make_engine, make_session_factory
 from app.db.shelf_life_repo import learn_alias, load_shelf_life_index
+from app.services.users import UserService
 
 
 def _alembic_config(url: str) -> Config:
@@ -80,6 +81,46 @@ def test_migrations_downgrade_to_empty(tmp_path: Path) -> None:
     engine.dispose()
 
 
+def _insert_item_sql() -> str:
+    return (
+        "INSERT INTO items (name, normalized_name, category, location, state, thawed, added_on, "
+        "location_since, estimated_expires_on, expires_on, expiration_source, status, input_source) "
+        "VALUES ('Milk', 'milk', 'dairy', 'fridge', 'unopened', 0, '2026-01-10', '2026-01-10', "
+        "'2026-01-20', '2026-01-20', 'estimated', 'active', 'manual')"
+    )
+
+
+def test_owner_migration_gives_existing_items_to_first_user(tmp_path: Path) -> None:
+    url = f"sqlite:///{(tmp_path / 'old.db').as_posix()}"
+    config = _alembic_config(url)
+    command.upgrade(config, "f432d1064dfa")  # users table exists, items have no owner yet
+    engine = make_engine(url)
+    with engine.begin() as connection:
+        connection.exec_driver_sql(
+            "INSERT INTO users (username, password_hash, expiring_soon_days, created_at) "
+            "VALUES ('first', 'x', 3, '2026-01-01'), ('second', 'x', 3, '2026-01-02')"
+        )
+        connection.exec_driver_sql(_insert_item_sql())
+    command.upgrade(config, "head")
+    with engine.connect() as connection:
+        owners = connection.exec_driver_sql("SELECT owner_id FROM items").scalars().all()
+        first_id = connection.exec_driver_sql("SELECT id FROM users WHERE username='first'").scalar()
+    engine.dispose()
+    assert owners == [first_id]
+
+
+def test_owner_migration_refuses_items_without_any_user(tmp_path: Path) -> None:
+    url = f"sqlite:///{(tmp_path / 'orphans.db').as_posix()}"
+    config = _alembic_config(url)
+    command.upgrade(config, "f432d1064dfa")
+    engine = make_engine(url)
+    with engine.begin() as connection:
+        connection.exec_driver_sql(_insert_item_sql())
+    engine.dispose()
+    with pytest.raises(RuntimeError, match="no accounts"):
+        command.upgrade(config, "head")
+
+
 def test_foreign_keys_are_enforced(session: Session) -> None:
     session.add(ShelfLifeAliasRow(alias="ghost", product_id=999_999, origin=AliasOrigin.CURATED))
     with pytest.raises(IntegrityError):
@@ -94,7 +135,6 @@ def test_seed_loads_reference_data(session: Session, data_files: tuple[dict, dic
     assert report.category_defaults == 90
     assert report.staples_added == len(DEFAULT_STAPLES)
     assert session.get(ShelfLifeProductRow, 118).name == "Chicken parts"
-    assert session.get(SettingRow, "expiring_soon_days").value == "3"
 
 
 def test_seed_is_idempotent(session: Session, data_files: tuple[dict, dict[str, int]]) -> None:
@@ -106,16 +146,19 @@ def test_seed_is_idempotent(session: Session, data_files: tuple[dict, dict[str, 
     assert len(session.scalars(select(StapleRow.id)).all()) == len(DEFAULT_STAPLES)
 
 
-def test_reseed_keeps_user_staple_and_setting_edits(session: Session, data_files: tuple[dict, dict[str, int]]) -> None:
+def test_reseed_keeps_user_staple_and_setting_edits(
+    session: Session, data_files: tuple[dict, dict[str, int]], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("app.db.seed.DEFAULT_SETTINGS", {"example": "default"})
     seed_reference_data(session, *data_files)
     session.delete(session.scalars(select(StapleRow).where(StapleRow.name == "water")).one())
-    session.get(SettingRow, "expiring_soon_days").value = "5"
+    session.get(SettingRow, "example").value = "changed"
     session.flush()
 
     seed_reference_data(session, *data_files)
 
     assert "water" not in session.scalars(select(StapleRow.name)).all()
-    assert session.get(SettingRow, "expiring_soon_days").value == "5"
+    assert session.get(SettingRow, "example").value == "changed"
 
 
 def test_learned_alias_survives_reseed_and_beats_curated(session: Session, data_files: tuple[dict, dict[str, int]]) -> None:
@@ -156,7 +199,9 @@ def test_learned_alias_changes_matching(session: Session, data_files: tuple[dict
 
 def test_item_with_events_round_trips(session: Session, data_files: tuple[dict, dict[str, int]]) -> None:
     seed_reference_data(session, *data_files)
+    owner = UserService(session).create_user("owner", "long-enough-pw")
     item = ItemRow(
+        owner_id=owner.id,
         name="Chicken thighs", normalized_name="chicken thigh", shelf_life_id=118,
         category=Category.POULTRY, quantity=1.5, unit="lb", location=Location.FRIDGE,
         added_on=date(2026, 1, 10), location_since=date(2026, 1, 10),
@@ -179,7 +224,9 @@ def test_item_with_events_round_trips(session: Session, data_files: tuple[dict, 
 
 def test_deleting_item_deletes_its_events(session: Session, data_files: tuple[dict, dict[str, int]]) -> None:
     seed_reference_data(session, *data_files)
+    owner = UserService(session).create_user("owner", "long-enough-pw")
     item = ItemRow(
+        owner_id=owner.id,
         name="Milk", normalized_name="milk", category=Category.DAIRY, location=Location.FRIDGE,
         added_on=date(2026, 1, 10), location_since=date(2026, 1, 10),
         estimated_expires_on=date(2026, 1, 20), expires_on=date(2026, 1, 20),

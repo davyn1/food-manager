@@ -3,12 +3,16 @@
 Every change that can affect an item's expiration goes through `_recalculate`, which
 refreshes the estimate and re-applies the rule that a user-entered date always wins.
 The caller owns the transaction: methods flush but never commit.
+
+A service instance acts for one user (`owner`): it only ever sees that user's items, and
+another user's item id behaves exactly like one that doesn't exist. Learned shelf-life
+aliases are shared by everyone.
 """
 
 from collections.abc import Callable
 from datetime import date, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
 from app.core.expiration import estimate_expiration, resolve_expiration, restarts_clock
@@ -23,13 +27,13 @@ from app.core.schemas import (
     ItemStatus,
     Location,
     ShelfLifeProduct,
+    User,
 )
 from app.core.shelf_life import ShelfLifeIndex
-from app.db.models import ItemEventRow, ItemRow, SettingRow
+from app.db.models import ItemEventRow, ItemRow, UserRow
 from app.db.shelf_life_repo import learn_alias
 
-EXPIRING_SOON_SETTING = "expiring_soon_days"
-DEFAULT_EXPIRING_SOON_DAYS = 3
+MAX_EXPIRING_SOON_DAYS = 60
 
 
 class PantryError(Exception):
@@ -52,10 +56,12 @@ def product_display_name(product: ShelfLifeProduct) -> str:
 
 class PantryService:
     def __init__(
-        self, session: Session, index: ShelfLifeIndex, today: Callable[[], date] = date.today
+        self, session: Session, index: ShelfLifeIndex, owner: User,
+        today: Callable[[], date] = date.today,
     ) -> None:
         self.session = session
         self.index = index
+        self.owner = owner
         self.today = today
 
     # --- adding ------------------------------------------------------------------
@@ -91,6 +97,7 @@ class PantryService:
         preview = self.preview(data.model_copy(update={"added_on": added_on}))
         opened_on = data.opened_on or (added_on if data.state is ItemState.OPENED else None)
         row = ItemRow(
+            owner_id=self.owner.id,
             name=data.name,
             normalized_name=normalize_name(data.name),
             shelf_life_id=preview.shelf_life_id,
@@ -194,7 +201,7 @@ class PantryService:
 
     def list_items(self, status: ItemStatus = ItemStatus.ACTIVE, location: Location | None = None) -> list[Item]:
         """Items soonest-expiring first."""
-        query = select(ItemRow).where(ItemRow.status == status)
+        query = self._items().where(ItemRow.status == status)
         if location is not None:
             query = query.where(ItemRow.location == location)
         query = query.order_by(ItemRow.expires_on, ItemRow.name, ItemRow.id)
@@ -205,7 +212,7 @@ class PantryService:
         days = self.expiring_soon_days() if days is None else days
         today = self.today()
         query = (
-            select(ItemRow)
+            self._items()
             .where(ItemRow.status == ItemStatus.ACTIVE)
             .where(ItemRow.expires_on >= today)
             .where(ItemRow.expires_on <= today + timedelta(days=days))
@@ -215,7 +222,7 @@ class PantryService:
 
     def expired(self) -> list[Item]:
         query = (
-            select(ItemRow)
+            self._items()
             .where(ItemRow.status == ItemStatus.ACTIVE)
             .where(ItemRow.expires_on < self.today())
             .order_by(ItemRow.expires_on, ItemRow.name, ItemRow.id)
@@ -223,16 +230,13 @@ class PantryService:
         return [self._to_item(row) for row in self.session.scalars(query)]
 
     def expiring_soon_days(self) -> int:
-        setting = self.session.get(SettingRow, EXPIRING_SOON_SETTING)
-        try:
-            return int(setting.value) if setting else DEFAULT_EXPIRING_SOON_DAYS
-        except ValueError:
-            return DEFAULT_EXPIRING_SOON_DAYS
+        """This user's "expiring soon" window in days."""
+        return self._owner_row().expiring_soon_days
 
     def set_expiring_soon_days(self, days: int) -> None:
-        if days < 0:
-            raise InvalidOperation("The expiring-soon window can't be negative")
-        self.session.merge(SettingRow(key=EXPIRING_SOON_SETTING, value=str(days)))
+        if not 0 <= days <= MAX_EXPIRING_SOON_DAYS:
+            raise InvalidOperation(f"Enter a whole number of days from 0 to {MAX_EXPIRING_SOON_DAYS}")
+        self._owner_row().expiring_soon_days = days
         self.session.flush()
 
     # --- internals ---------------------------------------------------------------
@@ -276,10 +280,19 @@ class PantryService:
         self.session.flush()
         return self._to_item(row)
 
+    def _items(self) -> Select[tuple[ItemRow]]:
+        """Base query: only this user's items."""
+        return select(ItemRow).where(ItemRow.owner_id == self.owner.id)
+
+    def _owner_row(self) -> UserRow:
+        row = self.session.get(UserRow, self.owner.id)
+        assert row is not None, "owner must exist for the duration of the request"
+        return row
+
     def _row(self, item_id: int) -> ItemRow:
         row = self.session.get(ItemRow, item_id)
-        if row is None:
-            raise ItemNotFound(item_id)
+        if row is None or row.owner_id != self.owner.id:
+            raise ItemNotFound(item_id)  # someone else's item looks the same as a missing one
         return row
 
     def _active_row(self, item_id: int) -> ItemRow:

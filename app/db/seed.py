@@ -30,7 +30,8 @@ from app.db.models import (
 )
 
 DEFAULT_STAPLES: tuple[str, ...] = ("salt", "pepper", "oil", "water", "sugar", "flour")
-DEFAULT_SETTINGS: dict[str, str] = {"expiring_soon_days": "3"}
+# App-wide settings. Per-person settings (like the expiring-soon window) live on users.
+DEFAULT_SETTINGS: dict[str, str] = {}
 
 
 @dataclass(frozen=True)

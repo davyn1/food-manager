@@ -27,7 +27,7 @@ def get_pantry(request: Request) -> Iterator[PantryService]:
             path = request.url.path + (f"?{request.url.query}" if request.url.query else "")
             raise LoginRequired(path)
         request.state.user = user
-        yield PantryService(session, request.app.state.index, today=request.app.state.today)
+        yield PantryService(session, request.app.state.index, owner=user, today=request.app.state.today)
     except Exception:
         session.rollback()
         raise
