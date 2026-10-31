@@ -168,6 +168,16 @@ Accounts and hosting (decided 2026-10-30):
 - Public without login: `/login`, `/health`, manifest, `/sw.js`, `/offline`, `/static`,
   so the app installs and works offline before signing in.
 
+Invites and passwords (decided 2026-10-31, planning for 4-5 friends):
+- One-time invite links instead of a shared code: admins (`users.is_admin`) create them
+  in Settings > Invite friends. A link works once and expires after 7 days; only its
+  SHA-256 is stored, so it's shown once. Used/expired/cancelled links explain themselves.
+- Change password in Settings (current + new twice). `users.session_version` is copied
+  into the login cookie; a password change or admin reset bumps it, signing out other
+  devices while keeping the current one signed in.
+- Referrer policy `same-origin` so sign-up tokens never leave the site in headers.
+- Limits to revisit as the group grows: docs/SCALING.md.
+
 ## 4. Recipes
 
 **Decision:** TheMealDB first; fetch the whole catalog once (by first letter a–z) into

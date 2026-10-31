@@ -69,21 +69,28 @@ to allow Python on private networks.
 
 ## Accounts
 
-There is no sign-up page. Create accounts from the command line (you'll be asked for the
-password twice; it isn't shown while you type):
+Each account has its own pantry. There is no open sign-up: an **admin** creates one-time
+invite links in the app (Settings > **Invite friends**). A link works once and expires
+after 7 days; whoever opens it picks their own username and password.
+
+Create the first (admin) account from the command line. You'll be asked for the password
+twice; it isn't shown while you type:
 
 ```powershell
-.\.venv\Scripts\python.exe -m app.manage add-user davy
+.\.venv\Scripts\python.exe -m app.manage add-user davy --admin
 ```
 
-Other commands: `set-password <username>` and `list-users`. Each account has its own
-pantry.
+Other commands: `set-password <username>` (also signs them out everywhere),
+`set-admin <username>` (add `--off` to remove), and `list-users`. People can change their
+own password in Settings.
+
+How this might need to change with more people: [docs/SCALING.md](docs/SCALING.md).
 
 ## Deploy to Fly.io
 
 **Live at https://davy-pantry.fly.dev** (app `davy-pantry`, region `lax`). Steps 1-4
 below are already done; to ship changes, just run `fly deploy --depot=false`. To create
-accounts, see step 5.
+your account and invite friends, see steps 5-6.
 
 The app runs on one small Fly machine (256 MB, about $2.20/month) with a 1 GB volume
 for the SQLite database (about $0.15/month). It stops when nobody is using it and starts
@@ -118,18 +125,15 @@ needed locally. The commands below use region `lax` (Los Angeles); pick another 
    fly deploy --ha=false --depot=false
    ```
 
-5. Open `https://<app-name>.fly.dev` once to wake the machine, then create the two
-   accounts. Each command asks for that person's password:
+5. Open `https://<app-name>.fly.dev` once to wake the machine, then create your own
+   admin account. It asks for your password:
 
    ```powershell
-   fly ssh console --pty -C "python -m app.manage add-user davy"
+   fly ssh console --pty -C "python -m app.manage add-user davy --admin"
    ```
 
-   ```powershell
-   fly ssh console --pty -C "python -m app.manage add-user <friend>"
-   ```
-
-6. Sign in on each phone and install it (below).
+6. Sign in, go to Settings > **Invite friends**, and send each friend their own link.
+   Everyone then installs it on their phone (below).
 
 Later updates: commit, then run `fly deploy --depot=false`. Logs: `fly logs`. Fly keeps automatic
 daily snapshots of the volume; list them with `fly volumes list` and

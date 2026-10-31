@@ -7,22 +7,27 @@ recommends recipes that use up what's expiring.
 - **How to set up and run:** [README.md](README.md)
 - **Architecture, schema, data and all design decisions:** [docs/DESIGN.md](docs/DESIGN.md)
 - **What to do next:** the "Next steps" section at the bottom of this file
+- **What may need changing with more users:** [docs/SCALING.md](docs/SCALING.md). Add to
+  it when you notice a new limit.
 
-## Status (as of 2026-10-30)
+## Status (as of 2026-10-31)
 
 Phase 1 (pantry tracker) is built and tested: steps 1-8 in docs/DESIGN.md section 7 are
-done, plus accounts (login, separate pantry per person) and Fly.io deploy config.
-279 tests pass; everything is pushed to `main` on https://github.com/davyn1/food-manager.
+done, plus accounts (login, separate pantry per person, one-time invite links, change
+password) and Fly.io deploy config. 307 tests pass; everything is pushed to `main` on
+https://github.com/davyn1/food-manager.
 
-Users: the owner and one friend, each with their own pantry. Hosting: Fly.io (the owner
-already uses Fly for another app). Tailscale was considered and dropped.
+Users: the owner plus a few friends (planning for 4-5), each with their own pantry. The
+owner is the admin and invites friends from Settings > Invite friends. Hosting: Fly.io
+(the owner already uses Fly for another app). Tailscale was considered and dropped.
 
 Deployed 2026-10-30: **https://davy-pantry.fly.dev** (Fly app `davy-pantry`, region
 `lax`, volume `pantry_data` 1 GB with daily snapshots kept 5 days, secret
 `FOOD_MANAGER_SECRET_KEY` set). Ship changes with `fly deploy --depot=false`.
 flyctl is installed on the dev PC and signed in.
 
-Not done yet: creating the two accounts and installing on the phones.
+Not done yet: deploying the invites/password work (the live site predates it), creating
+the owner's admin account, inviting friends, and installing on the phones.
 
 ## How to work on this project
 
@@ -47,10 +52,11 @@ app/
     schemas.py     all Pydantic models and enums
   db/            SQLAlchemy models, session, seeding, migrations helper, alias repo
   services/      pantry.py: PantryService for one owner (add/move/open/date/use/discard
-                 + queries); users.py: accounts and login
-  manage.py      CLI: add-user / set-password / list-users (no sign-up page)
+                 + queries); users.py: accounts, login, invites, password changes
+  manage.py      CLI: add-user [--admin] / set-password / set-admin / list-users
   inputs/        InputSource protocol (Phase 3 seam: every source yields ItemDraft)
-  web/           FastAPI pages (pages.py), PWA routes (pwa.py), templates, static
+  web/           FastAPI pages (pages.py), login/logout/sign-up (auth.py), password and
+                 invites (account.py), PWA routes (pwa.py), templates, static
   main.py        create_app() factory: migrates + seeds on startup
 data/
   shelf_life.json      generated from FoodKeeper (committed)
@@ -70,8 +76,11 @@ tests/           pytest; conftest.py has a seeded-DB template fixture and a Cloc
   through `_items()` / `_row()`, which filter on `owner_id`. Another user's item must
   behave exactly like a missing one (404). Never query `ItemRow` without the owner filter.
 - **Login:** pages get the user via the `get_pantry` dependency, which redirects to
-  `/login` when signed out. Only `/login`, `/health`, the PWA files, `/offline` and
-  `/static` are public.
+  `/login` when signed out. Only `/login`, `/signup/<token>`, `/health`, the PWA files,
+  `/offline` and `/static` are public. Sign people in with `deps.sign_in` so the cookie
+  carries `session_version`; bumping it (password change/reset) signs out other devices.
+- **Invites:** only the SHA-256 of a token is stored, so a link is shown once (the create
+  route renders the page rather than redirecting). Only admins manage invites.
 - **Storage clock:** only freezer moves restart it (`restarts_clock`). Pantry <-> fridge
   keeps the original date.
 - **Conservative estimates:** use FoodKeeper's minimum days. Perishable categories get 0
@@ -127,9 +136,12 @@ First-time setup on a new machine is in README.md ("Setup").
 
 ### Now: accounts and install on the phones
 - [x] Deploy to Fly.io (README.md, "Deploy to Fly.io"): launch, volume, secret, deploy.
-      Later deploys still need the owner's go-ahead (public-facing).
-- [ ] Create both accounts with `fly ssh console --pty -C "python -m app.manage add-user ..."`.
-      The owner types the passwords; never enter or choose passwords for them.
+- [ ] Deploy the invites/password work: `fly deploy --depot=false`. Every deploy needs the
+      owner's go-ahead (public-facing).
+- [ ] Owner creates their admin account:
+      `fly ssh console --pty -C "python -m app.manage add-user davy --admin"`.
+      The owner types the password; never enter or choose passwords for them.
+- [ ] Owner sends each friend an invite link from Settings > Invite friends.
 - [ ] Install from each phone: iPhone via Safari > Share > Add to Home Screen; Android via
       Chrome > Install. Check that it opens full screen with the jar icon.
 - [ ] Use it for a few days and note anything awkward one-handed.
@@ -141,7 +153,7 @@ First-time setup on a new machine is in README.md ("Setup").
 - [ ] Matching misses: "smoked salmon" matches fresh fish (1 day instead of 14).
       FoodKeeper only has homemade bread. The baked goods and condiments fallbacks are
       rough. Fix with curated aliases in `data/aliases_extra.json`.
-- [ ] Password change from the app (today only via `python -m app.manage set-password`).
+- [x] Password change from the app (Settings > Change password).
 
 ### Phase 2: recipe recommendations (propose first, then build)
 Decisions already approved (docs/DESIGN.md section 4):
