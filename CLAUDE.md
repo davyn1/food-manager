@@ -28,8 +28,8 @@ password changes. The first app, `davy-pantry`, was destroyed (Fly apps can't be
 renamed). Ship changes with `fly deploy --depot=false`. flyctl is installed on the dev PC
 and signed in.
 
-Not done yet: creating the owner's admin account, inviting friends, and installing on
-the phones.
+Accounts: `davy` (admin) created 2026-10-31. Not done yet: inviting friends and installing
+on the phones.
 
 ## How to work on this project
 
@@ -124,6 +124,8 @@ First-time setup on a new machine is in README.md ("Setup").
 - **Web tests** use `TestClient(app, follow_redirects=False)` so redirects can be asserted.
 - **Without `--reload`,** uvicorn won't pick up Python changes; restart it.
 - **`.claude/` is gitignored** (machine-specific paths, e.g. launch.json).
+- **`fly ssh console` needs a running machine.** It stops when idle, so wake it first
+  (e.g. `curl https://elaineisforgetful-pantry.fly.dev/health`).
 - **Fly builds:** the default Depot builder fails from this PC (TLS "certificate signed by
   unknown authority"); always deploy with `--depot=false`. Piping text into
   `fly secrets import` from PowerShell adds a BOM; use `fly secrets set` instead.
@@ -140,7 +142,7 @@ First-time setup on a new machine is in README.md ("Setup").
 - [x] Deploy to Fly.io (README.md, "Deploy to Fly.io"): launch, volume, secret, deploy.
 - [x] Deploy the invites/password work (2026-10-31, to `elaineisforgetful-pantry`).
       Every deploy needs the owner's go-ahead (public-facing).
-- [ ] Owner creates their admin account:
+- [x] Owner creates their admin account (`davy`, 2026-10-31):
       `fly ssh console --pty -C "python -m app.manage add-user davy --admin"`.
       The owner types the password; never enter or choose passwords for them.
 - [ ] Owner sends each friend an invite link from Settings > Invite friends.
