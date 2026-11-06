@@ -27,7 +27,7 @@ invite links from Settings > Invite friends.
 
 Live at **https://elaineisforgetful-pantry.fly.dev** (Fly app `elaineisforgetful-pantry`,
 region `lax`, volume `pantry_data` 1 GB with daily snapshots kept 5 days, secret
-`FOOD_MANAGER_SECRET_KEY` set). Last deployed 2026-11-05 with everything above. The first
+`FOOD_MANAGER_SECRET_KEY` set). Last deployed 2026-11-06 with everything above. The first
 app, `davy-pantry`, was destroyed (Fly apps can't be renamed). Ship changes with
 `fly deploy --depot=false`. flyctl is installed on the dev PC and signed in.
 
@@ -190,7 +190,7 @@ Suggested next: Phase 2 (recipes).
 - [x] Edit an item (name, amount, unit, category, notes; renaming re-matches and
       recalculates). Deployed 2026-11-05.
 - [x] Fix common name misses (bread, smoked salmon, cheese, spring mix, corn, pasta
-      sauce, cooked chicken, ...) with curated aliases. Not deployed yet as of 2026-11-05.
+      sauce, cooked chicken, ...) with curated aliases. Deployed 2026-11-06.
 - [x] Undo for "Used" / "Toss" (Undo button in the notice, 10 s).
 - [x] Ask for a date when food isn't recognized (one-tap 3 days / 1 week / ...).
 - [x] Password change from the app (Settings > Change password).
