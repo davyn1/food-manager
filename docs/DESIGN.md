@@ -98,8 +98,10 @@ Matching and estimation notes (step 4):
   Typos are corrected against the dataset vocabulary (rapidfuzz ratio >= 85, words of 4+
   letters). If nothing covers every word, an alias for the head noun wins
   ("skim milk" -> milk).
-- `data/aliases_extra.json`: about 20 curated aliases for ambiguous common names
-  (milk, rice, ham, lemons, onions...).
+- `data/aliases_extra.json`: about 50 curated aliases for ambiguous common names
+  (milk, rice, ham, lemons, onions, bread, cheese, smoked salmon, pasta sauce...). When
+  FoodKeeper has several fits, the alias picks the more cautious one. To find new misses,
+  run a list of everyday groceries through `ShelfLifeIndex.match` and read the results.
 - Unfamiliar food (2026-10-31): a match must cover more than half the weighted name
   (`MIN_SCORE = 0.6`), and a partial match must name the product, not just share a keyword
   ("greek yogurt" -> Yogurt yes; "chinese stir fry" -> fries and "pad thai" -> curry paste

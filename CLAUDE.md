@@ -17,7 +17,7 @@ recommends recipes that use up what's expiring.
 Phase 1 (pantry tracker) is built, tested and live: steps 1-8 in docs/DESIGN.md section 7,
 plus accounts (login, separate pantry per person, one-time invite links, change
 password), the "day dots" visual design, the playful voice, undo for Used/Toss, and asking
-for a date when food isn't recognized, and editing items. 367 tests pass; everything is
+for a date when food isn't recognized, and editing items. 389 tests pass; everything is
 pushed to `main` on
 https://github.com/davyn1/food-manager.
 
@@ -181,15 +181,16 @@ Suggested next: Phase 2 (recipes).
 - [ ] Date shortcuts (3 days / 1 week / 1 month) next to every date field, not only for
       unknown food (`partials/date_chips.html` already exists).
 - [ ] Search on All items.
-- [ ] Matching misses: "smoked salmon" matches fresh fish (1 day instead of 14).
-      FoodKeeper only has homemade bread. The baked goods and condiments fallbacks are
-      rough. Fix with curated aliases in `data/aliases_extra.json`.
+- [ ] The baked goods and condiments category fallbacks are rough (they only apply when
+      nothing matches and the user picks that category).
 - [ ] An unknown item with category "Other" moved to the pantry gets 180 days (the "other"
       median). Make that fallback much more cautious.
 - [ ] Undecided: whether the in-app name stays "Pantry" or leans into the
       "elaineisforgetful" joke (PRODUCT.md).
 - [x] Edit an item (name, amount, unit, category, notes; renaming re-matches and
       recalculates). Deployed 2026-11-05.
+- [x] Fix common name misses (bread, smoked salmon, cheese, spring mix, corn, pasta
+      sauce, cooked chicken, ...) with curated aliases. Not deployed yet as of 2026-11-05.
 - [x] Undo for "Used" / "Toss" (Undo button in the notice, 10 s).
 - [x] Ask for a date when food isn't recognized (one-tap 3 days / 1 week / ...).
 - [x] Password change from the app (Settings > Change password).
