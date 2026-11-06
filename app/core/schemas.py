@@ -50,6 +50,7 @@ class ItemEventType(StrEnum):
     DISCARDED = "discarded"
     DATE_OVERRIDDEN = "date_overridden"
     RESTORED = "restored"  # "used" or "thrown out" was undone
+    EDITED = "edited"  # name, amount, unit, category or notes changed
 
 
 class AliasOrigin(StrEnum):
@@ -198,6 +199,14 @@ class ItemDraft(BaseModel):
     raw_text: str | None = None  # what the recognizer saw, for the confirm screen
 
 
+def _clean_name(value: str) -> str:
+    """Collapse whitespace; a name can't be blank."""
+    value = " ".join(value.split())
+    if not value:
+        raise ValueError("name must not be blank")
+    return value
+
+
 class ItemCreate(BaseModel):
     """A user-confirmed new item. Unset fields are filled in by the pantry service."""
 
@@ -217,10 +226,7 @@ class ItemCreate(BaseModel):
     @field_validator("name")
     @classmethod
     def _strip_name(cls, value: str) -> str:
-        value = " ".join(value.split())
-        if not value:
-            raise ValueError("name must not be blank")
-        return value
+        return _clean_name(value)
 
     @classmethod
     def from_draft(cls, draft: ItemDraft) -> "ItemCreate":
@@ -234,6 +240,22 @@ class ItemCreate(BaseModel):
             user_expires_on=draft.printed_expiration,
             input_source=draft.input_source,
         )
+
+
+class ItemUpdate(BaseModel):
+    """Editable details of an existing item. Where it's kept, opened, dates and status have
+    their own actions; this covers what was typed when adding it."""
+
+    name: str = Field(min_length=1, max_length=200)
+    category: Category
+    quantity: float | None = Field(default=None, gt=0)
+    unit: str | None = Field(default=None, max_length=32)
+    notes: str | None = Field(default=None, max_length=500)
+
+    @field_validator("name")
+    @classmethod
+    def _strip_name(cls, value: str) -> str:
+        return _clean_name(value)
 
 
 class Item(BaseModel):

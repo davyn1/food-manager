@@ -11,11 +11,13 @@ from app.core.schemas import (
     Category,
     EstimateFlag,
     ExpirationSource,
+    Item,
     ItemCreate,
     ItemDraft,
     ItemEventType,
     ItemState,
     ItemStatus,
+    ItemUpdate,
     Location,
 )
 from app.db.models import ItemRow, ShelfLifeAliasRow
@@ -320,6 +322,67 @@ def test_mark_used_and_discard(pantry: PantryService) -> None:
     discarded = pantry.discard(pantry.add_item(ItemCreate(name="eggs")).id)
     assert (used.status, used.finished_on) == (ItemStatus.USED, D0)
     assert (discarded.status, discarded.finished_on) == (ItemStatus.DISCARDED, D0)
+
+
+# --- editing -----------------------------------------------------------------------
+
+def edit(pantry: PantryService, item_id: int, **changes: object) -> Item:
+    current = pantry.get_item(item_id)
+    fields = {"name": current.name, "category": current.category, "quantity": current.quantity,
+              "unit": current.unit, "notes": current.notes, **changes}
+    return pantry.update_item(item_id, ItemUpdate(**fields))
+
+
+def test_edit_amount_unit_and_notes_keeps_the_date(pantry: PantryService, session: Session) -> None:
+    item = pantry.add_item(ItemCreate(name="chicken thighs", quantity=2, unit="lb"))
+    edited = edit(pantry, item.id, quantity=1.5, unit="lbs", notes="for Sunday")
+    assert (edited.quantity, edited.unit, edited.notes) == (1.5, "lbs", "for Sunday")
+    assert edited.expires_on == item.expires_on
+    assert edited.shelf_life_id == 118
+    assert events(session, item.id)[-1] is ItemEventType.EDITED
+
+
+def test_renaming_matches_again_and_recalculates(pantry: PantryService) -> None:
+    item = pantry.add_item(ItemCreate(name="chicken thighs"))
+    assert item.expires_on == days_after(1)
+    renamed = edit(pantry, item.id, name="Canned tuna", category=Category.SHELF_STABLE)
+    assert renamed.name == "Canned tuna"
+    assert renamed.shelf_life_id == 618
+    assert renamed.expires_on > days_after(300)
+
+
+def test_renaming_to_unknown_food_uses_the_category(pantry: PantryService) -> None:
+    item = pantry.add_item(ItemCreate(name="chicken thighs"))
+    renamed = edit(pantry, item.id, name="Chinese stir fry", category=Category.LEFTOVERS)
+    assert renamed.shelf_life_id is None
+    assert renamed.expires_on == days_after(3)  # leftovers in the fridge
+
+
+def test_changing_category_of_unmatched_item_changes_fallback(pantry: PantryService) -> None:
+    item = pantry.add_item(ItemCreate(name="mystery thing", category=Category.OTHER))
+    assert item.expires_on == days_after(5)
+    recategorized = edit(pantry, item.id, category=Category.POULTRY)
+    assert recategorized.expires_on == days_after(1)
+
+
+def test_editing_never_overrides_the_users_date(pantry: PantryService) -> None:
+    item = pantry.add_item(ItemCreate(name="milk", user_expires_on=days_after(9)))
+    renamed = edit(pantry, item.id, name="oat milk", category=Category.DAIRY)
+    assert renamed.expires_on == days_after(9)
+    assert renamed.expiration_source is ExpirationSource.USER
+
+
+def test_edit_validation_and_scope(pantry: PantryService, other_pantry: PantryService) -> None:
+    with pytest.raises(ValidationError):
+        ItemUpdate(name="  ", category=Category.DAIRY)
+    with pytest.raises(ValidationError):
+        ItemUpdate(name="milk", category=Category.DAIRY, quantity=0)
+    theirs = other_pantry.add_item(ItemCreate(name="eggs"))
+    with pytest.raises(ItemNotFound):
+        pantry.update_item(theirs.id, ItemUpdate(name="mine now", category=Category.DAIRY))
+    used = pantry.mark_used(pantry.add_item(ItemCreate(name="milk")).id)
+    with pytest.raises(InvalidOperation, match="already used"):
+        edit(pantry, used.id, name="milk")
 
 
 def test_restore_undoes_used_and_discarded(pantry: PantryService, session: Session) -> None:

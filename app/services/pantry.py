@@ -25,6 +25,7 @@ from app.core.schemas import (
     ItemPreview,
     ItemState,
     ItemStatus,
+    ItemUpdate,
     Location,
     ShelfLifeProduct,
     User,
@@ -205,6 +206,31 @@ class PantryService:
 
     def discard(self, item_id: int, on: date | None = None) -> Item:
         return self._finish(item_id, ItemStatus.DISCARDED, ItemEventType.DISCARDED, on)
+
+    def update_item(self, item_id: int, data: ItemUpdate) -> Item:
+        """Change what was typed when adding: name, amount, unit, category, notes.
+
+        A new name is matched again (it may now be a different food, or none); a new
+        category changes the fallback estimate. Either recalculates the date, and a date
+        the user set still wins.
+        """
+        row = self._active_row(item_id)
+        renamed = data.name != row.name
+        recategorized = data.category is not row.category
+        row.name = data.name
+        row.normalized_name = normalize_name(data.name)
+        row.category = data.category
+        row.quantity = data.quantity
+        row.unit = data.unit
+        row.notes = data.notes
+        if renamed:
+            match = self.index.match(data.name, category=data.category)
+            row.shelf_life_id = match.product.id if match.product else None
+        if renamed or recategorized:
+            self._recalculate(row)
+        row.events.append(ItemEventRow(type=ItemEventType.EDITED))
+        self.session.flush()
+        return self._to_item(row)
 
     def restore(self, item_id: int) -> Item:
         """Undo "used" or "thrown out": the item is back in the pantry as it was."""
