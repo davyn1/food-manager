@@ -167,11 +167,31 @@ def test_real_data_unfamiliar_dishes_are_not_forced_into_a_match(real_index: She
 
 @pytest.mark.parametrize(
     ("name", "product_id"),
-    [("greek yogurt", 33), ("baby spinach", 291), ("chicken soup", 193), ("skim milk", 27), ("smoked salmon", 146)],
+    [("greek yogurt", 33), ("baby spinach", 291), ("chicken soup", 193), ("skim milk", 27)],
 )
 def test_real_data_good_partial_matches_still_match(real_index: ShelfLifeIndex, name: str, product_id: int) -> None:
     match = real_index.match(name)
     assert match.product is not None and match.product.id == product_id
+
+
+@pytest.mark.parametrize(
+    ("name", "product_id"),
+    [
+        # Curated aliases for names the matcher got wrong (see data/aliases_extra.json).
+        ("bread", 195), ("sourdough", 195), ("whole wheat bread", 461), ("croissants", 204),
+        ("smoked salmon", 166), ("lox", 166), ("salmon fillet", 146),
+        ("shredded cheese", 5), ("spring mix", 291), ("corn", 282), ("basil", 509),
+        ("mayo", 350), ("pasta sauce", 359), ("sriracha", 559), ("ramen", 336),
+        ("coffee", 541), ("cooked chicken", 135),
+        # Neighbors that must keep their own products.
+        ("homemade bread", 574), ("cream cheese", 10), ("dried basil", 508),
+        ("canned corn", 372), ("coffee beans", 400), ("chicken", 113),
+    ],
+)
+def test_real_data_curated_fixes(real_index: ShelfLifeIndex, name: str, product_id: int) -> None:
+    match = real_index.match(name)
+    assert match.product is not None, name
+    assert match.product.id == product_id, f"{name} -> #{match.product.id} {match.product.name}"
 
 
 def test_real_data_every_product_name_matches_something(real_index: ShelfLifeIndex) -> None:

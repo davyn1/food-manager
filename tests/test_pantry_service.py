@@ -271,7 +271,7 @@ def test_set_and_clear_user_date(pantry: PantryService, session: Session) -> Non
 
 def test_correcting_the_product_recalculates_and_learns(pantry: PantryService, session: Session) -> None:
     item = pantry.add_item(ItemCreate(name="smoked salmon"))
-    assert item.expires_on == days_after(1)  # matched fresh fatty fish
+    assert item.expires_on == days_after(14)  # curated: cold smoked, air pack
     fixed = pantry.set_shelf_life_product(item.id, 167)  # cold smoked, vacuum pack
     assert fixed.expires_on == days_after(21)
     assert session.get(ShelfLifeAliasRow, "smoked salmon").product_id == 167
