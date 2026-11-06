@@ -9,35 +9,42 @@ recommends recipes that use up what's expiring.
 - **What to do next:** the "Next steps" section at the bottom of this file
 - **What may need changing with more users:** [docs/SCALING.md](docs/SCALING.md). Add to
   it when you notice a new limit.
+- **Who it's for, voice and product principles:** [PRODUCT.md](PRODUCT.md) (read before
+  any UI or copy work).
 
-## Status (as of 2026-10-31)
+## Status (as of 2026-11-05)
 
-Phase 1 (pantry tracker) is built and tested: steps 1-8 in docs/DESIGN.md section 7 are
-done, plus accounts (login, separate pantry per person, one-time invite links, change
-password) and Fly.io deploy config. 307 tests pass; everything is pushed to `main` on
+Phase 1 (pantry tracker) is built, tested and live: steps 1-8 in docs/DESIGN.md section 7,
+plus accounts (login, separate pantry per person, one-time invite links, change
+password), the "day dots" visual design, the playful voice, undo for Used/Toss, and asking
+for a date when food isn't recognized. 355 tests pass; everything is pushed to `main` on
 https://github.com/davyn1/food-manager.
 
-Users: the owner plus a few friends (planning for 4-5), each with their own pantry. The
-owner is the admin and invites friends from Settings > Invite friends. Hosting: Fly.io
-(the owner already uses Fly for another app). Tailscale was considered and dropped.
+Users: mainly Elaine (forgetful; the app remembers for her), plus the owner (Davy, admin)
+and a few friends, 4-5 people in total, each with their own pantry. Friends join through
+invite links from Settings > Invite friends.
 
 Live at **https://elaineisforgetful-pantry.fly.dev** (Fly app `elaineisforgetful-pantry`,
 region `lax`, volume `pantry_data` 1 GB with daily snapshots kept 5 days, secret
-`FOOD_MANAGER_SECRET_KEY` set), deployed 2026-10-31 with everything up to invites and
-password changes. The first app, `davy-pantry`, was destroyed (Fly apps can't be
-renamed). Ship changes with `fly deploy --depot=false`. flyctl is installed on the dev PC
-and signed in.
+`FOOD_MANAGER_SECRET_KEY` set). Last deployed 2026-10-31 with everything above. The first
+app, `davy-pantry`, was destroyed (Fly apps can't be renamed). Ship changes with
+`fly deploy --depot=false`. flyctl is installed on the dev PC and signed in.
 
 Accounts: `davy` (admin) created 2026-10-31. Not done yet: inviting friends and installing
-on the phones.
+on the phones (the owner's tasks).
 
 ## How to work on this project
 
 - **Phases:** build in phases. Don't start a later phase until the current one works and
   is tested. Phase 3 (camera/receipt input) is design-only; don't build it yet.
 - **Small steps:** build one small working piece at a time, with pytest tests.
-- **Commit and push after each finished part,** to `main` on origin. End commit messages
-  with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- **Commit and push after each finished part,** to `main` on origin.
+- **Commit messages:** well written, or brief and explanatory. A short subject that says
+  what changed (and why, if not obvious), then a few lines of body only when needed. No
+  file-by-file lists. End with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- **Split commits** when it makes the history clearer: e.g. a logic change, its UI, and
+  its docs can be separate commits. Don't bundle unrelated changes.
+- **Deploys** are public-facing: ask the owner before each `fly deploy`.
 - **Ask first** before adding paid APIs or new major dependencies.
 - **Exact commands:** give the owner exact copy-paste commands (Windows PowerShell).
 - **Propose before building:** for each new phase, propose the plan and wait for approval.
@@ -58,7 +65,9 @@ app/
   manage.py      CLI: add-user [--admin] / set-password / set-admin / list-users
   inputs/        InputSource protocol (Phase 3 seam: every source yields ItemDraft)
   web/           FastAPI pages (pages.py), login/logout/sign-up (auth.py), password and
-                 invites (account.py), PWA routes (pwa.py), templates, static
+                 invites (account.py), PWA routes (pwa.py), display helpers incl. day
+                 dots (templating.py), templates (partials/: dot, icons, item_row,
+                 preview, date_chips), static
   main.py        create_app() factory: migrates + seeds on startup
 data/
   shelf_life.json      generated from FoodKeeper (committed)
@@ -87,10 +96,19 @@ tests/           pytest; conftest.py has a seeded-DB template fixture and a Cloc
   keeps the original date.
 - **Conservative estimates:** use FoodKeeper's minimum days. Perishable categories get 0
   pantry days. Unknown food defaults to the fridge.
+- **Don't guess unknown food:** a match must cover more than half the name and name the
+  product (`MIN_SCORE`, `_plausible_partial`). With no match, no category and no date,
+  `add_item` raises `NeedsDate` and the UI asks "When does it go bad?".
+- **Voice (PRODUCT.md):** playful and teasing in empty states and confirmations; dates,
+  warnings and errors stay plain. Notice text is fixed in `pages.NOTICES`.
+- **Visual design:** "day dots" (docs/DESIGN.md, "Visual design"). The dot is the only
+  loud element. Colors are CSS variables in `app.css`, with a dark mode; keep text
+  contrast at 4.5:1 or more. The Impeccable design hook runs after UI edits
+  (`.impeccable/config.json`).
 - **Enums in the DB:** stored as strings, so new categories need no migration.
 - **Web pages:** forms post and 303-redirect; `hx-boost` swaps pages. Notices use
   `?done=<key>&item=<id>` with fixed text; never echo text from the URL. `next` redirects
-  must be local paths (`_safe_next`).
+  must be local paths (`pages.safe_next`).
 - **Static assets:** CSS/JS URLs carry `?v=STATIC_VERSION` (hash of the files), which also
   names the service worker cache. Pages are never cached by the service worker.
 
@@ -129,6 +147,12 @@ First-time setup on a new machine is in README.md ("Setup").
 - **Fly builds:** the default Depot builder fails from this PC (TLS "certificate signed by
   unknown authority"); always deploy with `--depot=false`. Piping text into
   `fly secrets import` from PowerShell adds a BOM; use `fly secrets set` instead.
+- **Running a Python check on the server:** quoting `python -c "..."` through PowerShell
+  and `fly ssh console -C` breaks. Pipe a script instead, after
+  `$OutputEncoding = New-Object Text.UTF8Encoding $false` (no BOM):
+  `Get-Content check.py -Raw | fly ssh console -C "python -"`.
+- **Demo data for screenshots** lives in a scratch DB via `.claude/launch.json`
+  (`food-manager-demo`), never the real dev or live database.
 - **Uvicorn on Windows expands a bare `*`** in arguments into file names, so locally use
   `--forwarded-allow-ips=*`. The Dockerfile's exec form passes `*` through fine on Linux.
 - **Tests lower the scrypt cost** (autouse fixture in conftest) so password hashing is fast.
@@ -151,13 +175,24 @@ First-time setup on a new machine is in README.md ("Setup").
 - [ ] Use it for a few days and note anything awkward one-handed.
 
 ### Phase 1 backlog (small, do as needed)
+Suggested next: editing an item, then Phase 2.
 - [ ] Edit an item after adding: name, quantity, unit, category, notes. There is no edit
       form yet; changing the name should re-match and recalculate.
-- [ ] Undo for "Used" / "Toss" (e.g. a short-lived undo link in the notice).
+- [ ] Quick-add buttons for frequently added items, under the add box.
+- [ ] Date shortcuts (3 days / 1 week / 1 month) next to every date field, not only for
+      unknown food (`partials/date_chips.html` already exists).
+- [ ] Search on All items.
 - [ ] Matching misses: "smoked salmon" matches fresh fish (1 day instead of 14).
       FoodKeeper only has homemade bread. The baked goods and condiments fallbacks are
       rough. Fix with curated aliases in `data/aliases_extra.json`.
+- [ ] An unknown item with category "Other" moved to the pantry gets 180 days (the "other"
+      median). Make that fallback much more cautious.
+- [ ] Undecided: whether the in-app name stays "Pantry" or leans into the
+      "elaineisforgetful" joke (PRODUCT.md).
+- [x] Undo for "Used" / "Toss" (Undo button in the notice, 10 s).
+- [x] Ask for a date when food isn't recognized (one-tap 3 days / 1 week / ...).
 - [x] Password change from the app (Settings > Change password).
+- [x] Visual redesign ("day dots") and playful copy.
 
 ### Phase 2: recipe recommendations (propose first, then build)
 Decisions already approved (docs/DESIGN.md section 4):
@@ -186,3 +221,8 @@ Suggested order: RecipeSource protocol + TheMealDB client -> catalog import into
 ### Phase 3 (future, design only)
 Camera/receipt input. Each new source implements `InputSource` and returns `ItemDraft`s.
 The user always confirms or edits drafts before `PantryService.add_items` saves them.
+
+### Later, as the group grows
+Not scheduled; see docs/SCALING.md: expiry notifications or a daily email, password reset
+without the admin, shared household pantries, self-hosted fonts, longer backups, an admin
+page for accounts.
