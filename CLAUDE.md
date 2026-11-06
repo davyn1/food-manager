@@ -17,7 +17,8 @@ recommends recipes that use up what's expiring.
 Phase 1 (pantry tracker) is built, tested and live: steps 1-8 in docs/DESIGN.md section 7,
 plus accounts (login, separate pantry per person, one-time invite links, change
 password), the "day dots" visual design, the playful voice, undo for Used/Toss, and asking
-for a date when food isn't recognized. 355 tests pass; everything is pushed to `main` on
+for a date when food isn't recognized, and editing items. 367 tests pass; everything is
+pushed to `main` on
 https://github.com/davyn1/food-manager.
 
 Users: mainly Elaine (forgetful; the app remembers for her), plus the owner (Davy, admin)
@@ -175,9 +176,7 @@ First-time setup on a new machine is in README.md ("Setup").
 - [ ] Use it for a few days and note anything awkward one-handed.
 
 ### Phase 1 backlog (small, do as needed)
-Suggested next: editing an item, then Phase 2.
-- [ ] Edit an item after adding: name, quantity, unit, category, notes. There is no edit
-      form yet; changing the name should re-match and recalculate.
+Suggested next: Phase 2 (recipes).
 - [ ] Quick-add buttons for frequently added items, under the add box.
 - [ ] Date shortcuts (3 days / 1 week / 1 month) next to every date field, not only for
       unknown food (`partials/date_chips.html` already exists).
@@ -189,6 +188,8 @@ Suggested next: editing an item, then Phase 2.
       median). Make that fallback much more cautious.
 - [ ] Undecided: whether the in-app name stays "Pantry" or leans into the
       "elaineisforgetful" joke (PRODUCT.md).
+- [x] Edit an item (name, amount, unit, category, notes; renaming re-matches and
+      recalculates; not deployed yet as of 2026-11-05).
 - [x] Undo for "Used" / "Toss" (Undo button in the notice, 10 s).
 - [x] Ask for a date when food isn't recognized (one-tap 3 days / 1 week / ...).
 - [x] Password change from the app (Settings > Change password).
