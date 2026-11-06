@@ -201,6 +201,57 @@ def test_home_greets_by_name(client: TestClient) -> None:
     assert "Tester’s pantry" in client.get("/").text
 
 
+def test_edit_item_form_and_save(client: TestClient) -> None:
+    item_id = add(client, name="chicken thighs", quantity="2", unit="lb")
+    assert f'href="/items/{item_id}/edit"' in client.get(f"/items/{item_id}").text
+
+    form = client.get(f"/items/{item_id}/edit").text
+    assert 'value="chicken thighs"' in form
+    assert 'value="2"' in form and 'value="lb"' in form
+    assert '<option value="poultry" selected>' in form
+
+    response = client.post(f"/items/{item_id}/edit", data={
+        "name": "chicken thighs", "category": "poultry", "quantity": "1.5", "unit": "lb",
+        "notes": "for Sunday"})
+    assert response.status_code == 303
+    assert response.headers["location"] == f"/items/{item_id}?done=edited"
+    page = client.get(f"/items/{item_id}?done=edited").text
+    assert "Saved your changes to chicken thighs." in page
+    assert "1.5 lb" in page and "for Sunday" in page
+
+
+def test_edit_rename_rematches(client: TestClient) -> None:
+    item_id = add(client, name="chicken thighs")
+    client.post(f"/items/{item_id}/edit", data={"name": "canned tuna", "category": "shelf_stable"})
+    page = client.get(f"/items/{item_id}").text
+    assert "Tuna (canned)" in page
+    assert "canned tuna" in page
+
+
+@pytest.mark.parametrize(
+    ("data", "message"),
+    [({"name": " ", "category": "dairy"}, "Please enter a name"),
+     ({"name": "milk", "category": "dairy", "quantity": "-2"}, "more than zero"),
+     ({"name": "milk", "category": "dairy", "quantity": "lots"}, "Please enter a number")],
+)
+def test_edit_errors_keep_the_form(client: TestClient, data: dict[str, str], message: str) -> None:
+    item_id = add(client, name="milk")
+    response = client.post(f"/items/{item_id}/edit", data=data)
+    assert response.status_code == 422
+    assert message in response.text
+    assert "Saved your changes" not in client.get(f"/items/{item_id}").text
+
+
+def test_edit_finished_or_missing_items(client: TestClient) -> None:
+    item_id = add(client, name="milk")
+    client.post(f"/items/{item_id}/used")
+    assert client.get(f"/items/{item_id}/edit").status_code == 303
+    assert 'href="/items/' + str(item_id) + '/edit"' not in client.get(f"/items/{item_id}").text
+    assert client.post(f"/items/{item_id}/edit", data={"name": "x", "category": "dairy"}).status_code == 422
+    assert client.get("/items/99999/edit").status_code == 404
+    assert client.post("/items/99999/edit", data={"name": "x", "category": "dairy"}).status_code == 404
+
+
 def test_action_errors_render_on_item_page(client: TestClient) -> None:
     item_id = add(client, name="rice", quantity="5")
     response = client.post(f"/items/{item_id}/use", data={"amount": "-1"})

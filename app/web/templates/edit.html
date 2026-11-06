@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ item.name }}{% endblock %}
+{% block heading %}Edit {{ item.name }}{% endblock %}
+{% block content %}
+<form class="card edit-form" method="post" action="/items/{{ item.id }}/edit">
+  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+
+  <label>Name
+    <input name="name" type="text" value="{{ form.name or '' }}" maxlength="200" required
+           autocomplete="off" autocapitalize="sentences">
+  </label>
+  <p class="hint">Renaming checks the shelf-life list again, so the date may change.</p>
+
+  <div class="field-row">
+    <label>Amount
+      <input name="quantity" type="text" inputmode="decimal" value="{{ '%g' % form.quantity if form.quantity is number else (form.quantity or '') }}" placeholder="2">
+    </label>
+    <label>Unit
+      <input name="unit" type="text" list="units" value="{{ form.unit or '' }}" placeholder="lb" autocomplete="off">
+    </label>
+  </div>
+  <datalist id="units">{% for unit in UNIT_SUGGESTIONS %}<option value="{{ unit }}">{% endfor %}</datalist>
+
+  <label>Category
+    <select name="category">
+      {% for category, label in CATEGORY_LABELS.items() %}
+      <option value="{{ category.value }}" {% if form.category == category.value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label>Notes
+    <textarea name="notes" rows="3" maxlength="500" placeholder="e.g. for Sunday dinner">{{ form.notes or '' }}</textarea>
+  </label>
+
+  <div class="button-grid edit-actions">
+    <a class="button" href="/items/{{ item.id }}">Cancel</a>
+    <button class="primary">Save changes</button>
+  </div>
+</form>
+{% endblock %}

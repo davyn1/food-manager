@@ -69,9 +69,9 @@
   </details>
 
   <details class="fold" {% if item.user_expires_on %}open{% endif %}>
-    <summary>Printed date</summary>
+    <summary>Use-by date</summary>
     <form class="inline-form" method="post" action="/items/{{ item.id }}/date">
-      <label>Date on the package
+      <label>On the package, or your own
         <input name="user_expires_on" type="date" value="{{ item.user_expires_on.isoformat() if item.user_expires_on else '' }}">
       </label>
       <button>Save</button>
@@ -87,6 +87,12 @@
 {% endif %}
 
 <section class="details">
+  {% if active %}
+  <div class="section-head">
+    <h2>Details</h2>
+    <a href="/items/{{ item.id }}/edit">Edit</a>
+  </div>
+  {% endif %}
   <dl>
     <dt>Shelf-life match</dt>
     <dd>{{ item.shelf_life_name or "None (" ~ CATEGORY_LABELS[item.category] ~ " defaults)" }}
@@ -97,6 +103,7 @@
     <dt>Added</dt><dd>{{ short_date(item.added_on) }}</dd>
     {% if item.opened_on %}<dt>Opened</dt><dd>{{ short_date(item.opened_on) }}</dd>{% endif %}
     {% if item.user_expires_on %}<dt>Estimate</dt><dd>{{ short_date(item.estimated_expires_on) }}</dd>{% endif %}
+    {% if item.notes %}<dt>Notes</dt><dd class="notes">{{ item.notes }}</dd>{% endif %}
   </dl>
 </section>
 {% endblock %}

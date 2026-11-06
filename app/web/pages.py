@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from pydantic import ValidationError
 
-from app.core.schemas import Category, ItemCreate, ItemState, ItemStatus, Location
+from app.core.schemas import Category, ItemCreate, ItemState, ItemStatus, ItemUpdate, Location
 from app.services.pantry import InvalidOperation, ItemNotFound, NeedsDate, PantryService
 from app.web.deps import get_pantry
 from app.web.templating import templates
@@ -26,6 +26,7 @@ NOTICES: dict[str, str] = {
     "used": "Marked {name} as used. Nothing wasted.",
     "discarded": "Threw out {name}. It happens.",
     "restored": "{name} is back in your pantry.",
+    "edited": "Saved your changes to {name}.",
 }
 # These notices offer an Undo button, since one tap on Used or Toss removes the item.
 UNDOABLE = {"used", "discarded"}
@@ -220,11 +221,61 @@ def expired(request: Request, pantry: Pantry, done: str | None = None, item: int
 # --- one item ----------------------------------------------------------------------
 
 @router.get("/items/{item_id}", response_class=HTMLResponse)
-def item_detail(request: Request, pantry: Pantry, item_id: int) -> Response:
+def item_detail(request: Request, pantry: Pantry, item_id: int, done: str | None = None) -> Response:
     item = _item_or_404(request, pantry, item_id)
     if isinstance(item, Response):
         return item
-    return render(request, pantry, "item.html", item=item, error=None)
+    return render(request, pantry, "item.html", item=item, error=None, **_notice(pantry, done, item_id))
+
+
+@router.get("/items/{item_id}/edit", response_class=HTMLResponse)
+def edit_form(request: Request, pantry: Pantry, item_id: int) -> Response:
+    item = _item_or_404(request, pantry, item_id)
+    if isinstance(item, Response):
+        return item
+    if item.status is not ItemStatus.ACTIVE:
+        return redirect(f"/items/{item_id}")
+    form = {"name": item.name, "category": item.category.value, "quantity": item.quantity,
+            "unit": item.unit, "notes": item.notes}
+    return render(request, pantry, "edit.html", item=item, form=form, error=None)
+
+
+@router.post("/items/{item_id}/edit")
+def save_edit(
+    request: Request, pantry: Pantry, item_id: int,
+    name: OptStr = None, category: OptStr = None, quantity: OptStr = None,
+    unit: OptStr = None, notes: OptStr = None,
+) -> Response:
+    form = {"name": name, "category": category, "quantity": quantity, "unit": unit, "notes": notes}
+    try:
+        data = ItemUpdate(
+            name=name or "",
+            category=Category(category) if _blank_to_none(category) else Category.OTHER,
+            quantity=_parse_float(quantity),
+            unit=_blank_to_none(unit),
+            notes=_blank_to_none(notes),
+        )
+        pantry.update_item(item_id, data)
+    except ItemNotFound:
+        return render(request, pantry, "not_found.html", status_code=404)
+    except ValidationError as exc:
+        field = exc.errors()[0]["loc"][0] if exc.errors() else ""
+        message = {"name": "Please enter a name", "quantity": "The amount has to be more than zero",
+                   "notes": "Notes can be up to 500 characters"}.get(field, "Please check the details")
+        return _edit_with_error(request, pantry, item_id, form, message)
+    except (InvalidOperation, ValueError) as exc:
+        return _edit_with_error(request, pantry, item_id, form, str(exc))
+    pantry.session.commit()
+    return redirect(f"/items/{item_id}", done="edited")
+
+
+def _edit_with_error(request: Request, pantry: PantryService, item_id: int, form: dict[str, Any],
+                     error: str) -> Response:
+    pantry.session.rollback()
+    item = _item_or_404(request, pantry, item_id)
+    if isinstance(item, Response):
+        return item
+    return render(request, pantry, "edit.html", status_code=422, item=item, form=form, error=error)
 
 
 def _act(request: Request, pantry: PantryService, item_id: int, action: Any, next_url: str | None,
