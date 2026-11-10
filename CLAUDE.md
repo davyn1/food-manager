@@ -102,8 +102,10 @@ tests/           pytest; conftest.py has a seeded-DB template fixture and a Cloc
   `add_item` raises `NeedsDate` and the UI asks "When does it go bad?".
 - **Voice (PRODUCT.md):** playful and teasing in empty states and confirmations; dates,
   warnings and errors stay plain. Notice text is fixed in `pages.NOTICES`.
-- **Visual design:** "day dots" (docs/DESIGN.md, "Visual design"). The dot is the only
-  loud element. Colors are CSS variables in `app.css`, with a dark mode; keep text
+- **Visual design:** "day dots" (docs/DESIGN.md, "Visual design"), dressed as
+  "kitchen labels": masking-tape page titles, marker section names on shelf edges,
+  shelves with a front lip. The dot stays the loudest element; marker never goes on
+  body text, dates or buttons. Colors are CSS variables in `app.css`, with a dark mode; keep text
   contrast at 4.5:1 or more. The Impeccable design hook runs after UI edits
   (`.impeccable/config.json`).
 - **Enums in the DB:** stored as strings, so new categories need no migration.

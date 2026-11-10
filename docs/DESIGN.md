@@ -196,16 +196,23 @@ Visual design: "day dots" (2026-10-31):
   a marker number plus a small lowercase unit ("3" / "days", "4" / "mo"), because the
   marker face is capitals-only and "3D" read like 3-D. Full text stays in the page for
   screen readers.
-- Colors: fridge-enamel page `#edf1f2`, white shelves, marker-navy ink `#1c2430`,
-  painter's-tape blue `#2f6db5` for actions and the active tab. Dark mode is the same
-  roles at night (`#10151b` page, `#6fa5ea` tape).
+- Kitchen labels (2026-11-10, so it doesn't feel like a generic app): page titles sit on a
+  torn strip of masking tape (`.tape`, zigzag ends from a CSS mask), section names are
+  written in marker on a shelf edge (3px rule), panels and lists are shelves with a 4px
+  front lip, empty states are notes with a piece of tape, and confirmations are a tape
+  strip that sticks on. The active tab has a short strip of blue tape.
+- Colors: cream-fridge page `#f1ede4`, warm white shelves `#fffdf8`, shelf lip
+  `#ddd4c3`, masking tape `#ecd9a4`, marker-navy ink `#1c2430`, painter's-tape blue
+  `#2f6db5` for actions and the active tab. Dark mode is the same roles at night (warm
+  charcoal `#161512` page, `#cdb983` tape, `#6fa5ea` blue).
 - Type: Atkinson Hyperlegible (Braille Institute's legibility face, fitting an app for a
-  forgetful user) for everything; Permanent Marker only inside dots. Both load from
+  forgetful user) for everything; Permanent Marker for dots, page titles and section
+  names (never body text, dates or buttons). Both load from
   Google Fonts (system-font fallback offline). Self-hosting them would remove the Google
   request; see docs/SCALING.md.
 - Lists are one white shelf with thin dividers (not a card per item). Location is an
   icon plus word; the tab bar has icons. Confirmation notices fade after 4 seconds.
-  No middle-dot separators or all-caps labels.
+  No middle-dot separators or all-caps labels (the marker face only looks capitalized).
 
 ## 4. Recipes
 
