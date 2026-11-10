@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   {# Never send page URLs (e.g. a sign-up link's token) to other sites. #}
   <meta name="referrer" content="same-origin">
-  <meta name="theme-color" content="#edf1f2" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#10151b" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f1ede4" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#161512" media="(prefers-color-scheme: dark)">
   {# Swap 422 responses too, so form errors render in place. #}
   <meta name="htmx-config" content='{"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"422","swap":true},{"code":"[45]..","swap":false,"error":true}]}'>
   <title>{% block title %}Pantry{% endblock %} · Food Manager</title>
@@ -31,12 +31,12 @@
 </head>
 <body hx-boost="true">
   <header class="topbar">
-    <h1>{% block heading %}Pantry{% endblock %}</h1>
+    <div class="topbar-inner"><h1 class="tape">{% block heading %}Pantry{% endblock %}</h1></div>
   </header>
 
   <main class="page">
     {% if notice %}
-    <div class="notice" role="status" data-autohide="{{ 10 if undo_item else 4 }}">
+    <div class="notice tape" role="status" data-autohide="{{ 10 if undo_item else 4 }}">
       <p>{{ notice }}</p>
       {% if undo_item %}
       <form method="post" action="/items/{{ undo_item }}/restore">

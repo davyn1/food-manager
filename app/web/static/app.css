@@ -1,15 +1,20 @@
 /* Pantry: "day dots". Kitchens label food with colored dot stickers and a marker; here
    each item gets one. The dot is the only loud element: color is urgency, the marker text
-   is time left. Everything else stays quiet: white shelves on fridge-enamel, navy marker
-   ink, painter's-tape blue for actions. Mobile-first, one-handed, 48px+ tap targets. */
+   is time left. Around them, a kitchen that labels things: page titles on torn strips of
+   masking tape, section names written in marker on the shelf edge, items on shelves with
+   a front lip, empty states as notes taped up. Painter's-tape blue for actions.
+   Mobile-first, one-handed, 48px+ tap targets. */
 
 :root {
-  --enamel: #edf1f2;     /* page: inside of a fridge */
-  --shelf: #ffffff;      /* panels */
-  --field: #f4f7f8;      /* inputs on a shelf */
+  --enamel: #f1ede4;     /* page: a cream fridge */
+  --shelf: #fffdf8;      /* panels */
+  --field: #f7f3ea;      /* inputs on a shelf */
+  --lip: #ddd4c3;        /* the front edge of a shelf */
   --ink: #1c2430;        /* marker-ink navy */
-  --ink-soft: #586473;
-  --rule: #d6dee2;
+  --ink-soft: #5b6270;
+  --rule: #e4ddcf;
+  --masking: #ecd9a4;    /* masking tape for labels */
+  --masking-ink: #1c2430;
   --tape: #2f6db5;       /* painter's tape: buttons, links, active tab */
   --tape-ink: #ffffff;
   --tape-soft: #dce8f6;
@@ -25,7 +30,7 @@
   --dot-later: #aab5c4;
   --dot-done: #cfd6de;
 
-  --radius: 14px;
+  --radius: 8px;
   --tap: 48px;
   --tabbar-h: 66px;
   --body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -35,12 +40,15 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --enamel: #10151b;
-    --shelf: #19212a;
-    --field: #141b22;
-    --ink: #e8eef3;
-    --ink-soft: #9aa7b5;
-    --rule: #2a3540;
+    --enamel: #161512;
+    --shelf: #211f1b;
+    --field: #1a1916;
+    --lip: #3a352d;
+    --ink: #efe9df;
+    --ink-soft: #aaa194;
+    --rule: #332f29;
+    --masking: #cdb983;
+    --masking-ink: #221c10;
     --tape: #6fa5ea;
     --tape-ink: #0d1b2c;
     --tape-soft: #1c2e44;
@@ -86,26 +94,50 @@ p { margin: 0; }
   background: var(--enamel);
   padding: calc(env(safe-area-inset-top) + 14px) 16px 10px;
 }
+.topbar-inner { max-width: 608px; margin: 0 auto; }
+
+/* A strip of masking tape, torn at both ends, stuck on slightly crooked. */
+.tape {
+  --tooth: 6px;
+  display: inline-block;
+  padding: 6px 18px 4px;
+  background-color: var(--masking);
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 0.28), transparent 40%, rgb(0 0 0 / 0.04));
+  color: var(--masking-ink);
+  -webkit-mask:
+    conic-gradient(from 45deg at left, #000 25%, #0000 0) 0 / 51% var(--tooth) repeat-y,
+    conic-gradient(from -135deg at right, #000 25%, #0000 0) 100% / 51% var(--tooth) repeat-y;
+          mask:
+    conic-gradient(from 45deg at left, #000 25%, #0000 0) 0 / 51% var(--tooth) repeat-y,
+    conic-gradient(from -135deg at right, #000 25%, #0000 0) 100% / 51% var(--tooth) repeat-y;
+}
 .topbar h1 {
-  max-width: 608px; margin: 0 auto;
-  font-size: 1.65rem; line-height: 1.15; font-weight: 700; letter-spacing: -0.01em;
+  margin: 0; max-width: 100%;
+  font-family: var(--marker); font-weight: 400;
+  font-size: 1.6rem; line-height: 1.2; letter-spacing: 0.01em;
   overflow-wrap: anywhere;
+  transform: rotate(-1.2deg); transform-origin: left center;
 }
 
 .page { max-width: 640px; margin: 0 auto; padding: 4px 16px 12px; }
 
-section { margin-top: 24px; }
+section { margin-top: 28px; }
 h2 { font-size: 1.1rem; line-height: 1.3; margin: 0; font-weight: 700; }
 
+/* Section names are written in marker on the shelf edge. */
 .section-head {
   display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 10px; padding-bottom: 4px;
+  border-bottom: 3px solid var(--lip);
 }
+.section-head h2 { font-family: var(--marker); font-weight: 400; font-size: 1.3rem; letter-spacing: 0.01em; }
 .section-head a { font-weight: 700; text-decoration: none; }
 
+/* Panels are shelves: square-ish, with a front lip. */
 .card {
   background: var(--shelf);
-  border-radius: var(--radius);
+  border-radius: var(--radius) var(--radius) 2px 2px;
+  border-bottom: 4px solid var(--lip);
   padding: 16px;
 }
 
@@ -123,6 +155,11 @@ h2 { font-size: 1.1rem; line-height: 1.3; margin: 0; font-weight: 700; }
   color: var(--ink-soft); text-decoration: none; font-size: 0.78rem;
 }
 .tabbar a[aria-current="page"] { color: var(--tape); font-weight: 700; }
+.tabbar a[aria-current="page"]::before {   /* a short strip of painter's tape on the tab */
+  content: ""; position: absolute; top: 0; left: 50%;
+  width: 34px; height: 4px; margin-left: -17px;
+  background: var(--tape); border-radius: 0 0 2px 2px;
+}
 .badge {
   position: absolute; top: 8px; left: calc(50% + 6px);
   min-width: 20px; height: 20px; padding: 0 6px;
@@ -273,7 +310,8 @@ fieldset.move form { flex: 1; min-width: 0; }
 
 ul.items {
   list-style: none; margin: 0; padding: 0;
-  background: var(--shelf); border-radius: var(--radius); overflow: hidden;
+  background: var(--shelf); border-radius: var(--radius) var(--radius) 2px 2px; overflow: hidden;
+  border-bottom: 4px solid var(--lip);
 }
 .item { display: flex; align-items: stretch; }
 .item + .item { border-top: 1px solid var(--rule); }
@@ -361,16 +399,46 @@ ul.invites li { display: grid; gap: 2px; }
 /* --- messages ------------------------------------------------------------------ */
 
 .notice, .error { padding: 12px 14px; border-radius: 12px; margin: 0 0 12px; font-weight: 700; }
+/* Confirmations are a strip of tape slapped on. */
 .notice {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  background: var(--tape-soft); transition: opacity 0.3s ease;
+  width: 100%; border-radius: 0; padding: 10px 22px;
+  transform: rotate(-0.6deg);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  animation: stick 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .notice form { flex: none; }
 button.undo { min-height: 40px; padding: 0 16px; background: var(--shelf); border-color: transparent; color: var(--tape); }
-.notice.is-hiding { opacity: 0; }
+.notice.is-hiding { opacity: 0; transform: rotate(-0.6deg) translateY(-6px); }
+@keyframes stick {
+  from { opacity: 0; transform: rotate(-3deg) scale(1.04); }
+}
 .error { background: var(--danger-soft); color: var(--danger); }
 .empty, .hint { color: var(--ink-soft); }
-.empty { padding: 18px 16px; background: var(--shelf); border-radius: var(--radius); }
+
+/* Empty states are a note taped to the shelf. */
+.empty {
+  position: relative;
+  margin-top: 14px; padding: 22px 18px 18px;
+  background: var(--shelf); color: var(--ink); border-radius: 3px;
+  box-shadow: 0 1px 2px rgb(60 45 20 / 0.08), 0 10px 18px -12px rgb(60 45 20 / 0.35);
+  transform: rotate(-0.5deg);
+}
+.empty::before {
+  content: ""; position: absolute; top: -10px; left: 50%;
+  width: 92px; height: 22px; margin-left: -46px;
+  transform: rotate(2.5deg);
+  opacity: 0.92;
+}
+.empty::before { background: var(--masking); }
+.empty::before, .tape-piece {
+  -webkit-mask:
+    conic-gradient(from 45deg at left, #000 25%, #0000 0) 0 / 51% 6px repeat-y,
+    conic-gradient(from -135deg at right, #000 25%, #0000 0) 100% / 51% 6px repeat-y;
+          mask:
+    conic-gradient(from 45deg at left, #000 25%, #0000 0) 0 / 51% 6px repeat-y,
+    conic-gradient(from -135deg at right, #000 25%, #0000 0) 100% / 51% 6px repeat-y;
+}
 .muted { color: var(--ink-soft); font-weight: 400; }
 
 @media (prefers-reduced-motion: reduce) {

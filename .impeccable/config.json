@@ -5,5 +5,20 @@
       "maxFindings": 5,
       "maxChars": 8000
     }
+  },
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "border-accent-on-rounded",
+        "value": "*",
+        "files": [
+          "app/web/static/app.css"
+        ],
+        "createdAt": "2026-11-10T08:40:31.964Z",
+        "reason": "Agent: the 4px bottom border is the shelf's front lip in the kitchen-labels world the owner chose; bottom corners are squared to 2px"
+      }
+    ]
   }
 }
